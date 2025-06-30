@@ -1,14 +1,18 @@
 import express from "express";
 import cors from "cors";
 
+import dotenv from "dotenv";
+dotenv.config();
+
+const port = process.env.PORT || 8080;
+
 const app = express();
 
-const port = 8080; // Choose a port different from React's default (3000)
+
 var corsOptions = {
-  origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+  origin: [`http://localhost:${port}`, `http://127.0.0.1:${port}`],
   optionsSuccessStatus: 200, // For legacy browser support
 };
-
 app.use(cors(corsOptions));
 
 app.get("/", (req, res) => {
