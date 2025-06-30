@@ -10,7 +10,7 @@ export default function SpectatorView() {
     const enableCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: { facingMode: "environment" }, // or "user"
         });
         activeStream = stream;
         if (videoRef.current) {
@@ -18,13 +18,12 @@ export default function SpectatorView() {
         }
       } catch (err) {
         console.error("Camera error:", err);
-        setError("Unable to access camera.");
+        setError("Unable to access camera. Please enable it in your browser.");
       }
     };
 
     enableCamera();
 
-    Clean up on component unmount
     return () => {
       if (activeStream) {
         activeStream.getTracks().forEach((track) => track.stop());
@@ -33,10 +32,8 @@ export default function SpectatorView() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-6">
-      <h1 className="text-4xl font-bold mb-4">Spectator View</h1>
-      <p className="mb-6 text-lg">Live camera feed displayed below:</p>
-
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
+      <h1 className="text-3xl font-bold mb-4">Spectator View</h1>
       {error ? (
         <div className="bg-red-600 text-white px-4 py-2 rounded">{error}</div>
       ) : (
@@ -44,7 +41,8 @@ export default function SpectatorView() {
           ref={videoRef}
           autoPlay
           playsInline
-          className="rounded-lg shadow-xl max-w-full w-[640px] h-[480px] border-4 border-white"
+          muted
+          className="rounded-lg shadow-lg w-full max-w-md aspect-video"
         />
       )}
     </div>
