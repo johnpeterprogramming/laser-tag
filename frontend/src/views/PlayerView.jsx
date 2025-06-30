@@ -50,7 +50,7 @@ export default function PlayerView() {
     };
 
     // Request camera access
-    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then((stream) => {
       if (videoRef.current) {
         console.log(stream);
         videoRef.current.srcObject = stream;
