@@ -1,0 +1,79 @@
+.start-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #282c34;
+  color: white;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.start-page-container h1 {
+  margin-bottom: 30px;
+  color: #61dafb;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  text-align: left;
+  width: 80%;
+  max-width: 400px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1em;
+  background-color: #3a3f47;
+  color: white;
+}
+
+.input-group input::placeholder {
+  color: #bbb;
+}
+
+.button-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+  width: 80%;
+  max-width: 400px;
+}
+
+.button-group button {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.1em;
+  cursor: pointer;
+  background-color: #4CAF50;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.button-group button:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.error-message {
+  color: #ff6347;
+  margin-top: 15px;
+  font-weight: bold;
+}
+
+.note {
+  margin-top: 30px;
+  font-size: 0.9em;
+  color: #aaa;
+}
