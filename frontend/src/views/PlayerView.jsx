@@ -23,10 +23,10 @@ export default function PlayerView() {
       ctx.strokeStyle = "black";
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(canvasRef.current.width / 2, canvasRef.current.height / 2 - 10);
-      ctx.lineTo(canvasRef.current.width / 2, canvasRef.current.height / 2 + 10);
-      ctx.moveTo(canvasRef.current.width / 2 - 10, canvasRef.current.height / 2);
-      ctx.lineTo(canvasRef.current.width / 2 + 10, canvasRef.current.height / 2);
+      ctx.moveTo(canvasRef.current.width / 2, canvasRef.current.height / 2 - 11);
+      ctx.lineTo(canvasRef.current.width / 2, canvasRef.current.height / 2 + 11);
+      ctx.moveTo(canvasRef.current.width / 2 - 11, canvasRef.current.height / 2);
+      ctx.lineTo(canvasRef.current.width / 2 + 11, canvasRef.current.height / 2);
       ctx.stroke();
       ctx.strokeStyle = "white";
       ctx.lineWidth = 2;
