@@ -37,29 +37,35 @@
     height: 150px;
     object-fit: contain;
     user-select: none;
+    transform: rotate(20deg);
 }
 
 .shoot-particle {
     position: absolute;
     top: 80%;
-    left: 55%;
+    left: 65%;
     width: 20px;
     height: 20px;
     background: red;
     border-radius: 50%;
     box-shadow: 0 0 20px yellow;
-    transform: translateX(-50%) translateY(-50%) scale(1);
-    animation: shoot-burst 0.6s ease-out forwards;
+    transform: translate(-50%, -50%) scale(1);
+    animation: shoot-to-center 0.6s ease-out forwards;
     z-index: 12;
 }
 
-@keyframes shoot-burst {
+.gun-image.shoot-recoil {
+    transform: rotate(10deg);
+    transition: transform 0.1s ease;
+}
+
+@keyframes shoot-to-center {
     0% {
         opacity: 1;
-        transform: translateX(-50%) translateY(-50%) scale(1);
+        transform: translate(-50%, -50%) scale(1);
     }
     100% {
         opacity: 0;
-        transform: translateX(-250%) translateY(-300%) scale(0.5);
+        transform: translate(calc(-100% - 5vw), calc(-50% - 30vh)) scale(0.5);
     }
 }

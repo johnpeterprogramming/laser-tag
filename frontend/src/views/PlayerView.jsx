@@ -62,8 +62,12 @@ export default function PlayerView() {
       if (stream) stream.getTracks().forEach((track) => track.stop());
     };
   }, []);
+  const [recoil, setRecoil] = useState(false);
 
   const handleShoot = () => {
+    setRecoil(true);
+    setTimeout(() => setRecoil(false), 100); // reset after 100ms
+
     const id = Date.now();
     setParticles((prev) => [...prev, { id }]);
 
@@ -91,7 +95,11 @@ export default function PlayerView() {
       />
 
       <div className="gun-overlay">
-        <img src="./gun.png" alt="Gun" className="gun-image" />
+        <img
+          src="./gun.png"
+          alt="Gun"
+          className={`gun-image ${recoil ? "shoot-recoil" : ""}`}
+        />
       </div>
 
       {particles.map((particle) => (
