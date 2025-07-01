@@ -1,8 +1,45 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './StartPage.css';
+import './StartPage.css'; // Create this file for basic styling
+import socket from '../socket';
+// For testing
 
 function StartPage() {
+  const [isConnected, setIsConnected] = useState(socket.connected);
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    function onConnect() {
+      setIsConnected(true);
+    }
+
+    function onDisconnect() {
+      setIsConnected(false);
+    }
+
+    function onEvent(value: any) {
+      setEvents(previous => [...previous, value]);
+    }
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('foo', onEvent);
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('foo', onEvent);
+    };
+  }, []);
+
+  function connect() {
+    socket.connect();
+  }
+
+  function disconnect() {
+    socket.disconnect();
+  }
+
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [lobbyCode, setLobbyCode] = useState('');
@@ -65,6 +102,24 @@ function StartPage() {
         <div className="laser right-to-left"></div>
       </div>
 
+      {/* State test */}
+      <p>State: {'' + isConnected}</p>
+
+      {/* Events test */}
+      <ul>
+        {
+          events.map((event, index) =>
+            <li key={index}>{event}</li>
+          )
+        }
+      </ul>
+
+      {/* Connection manager test */}
+      <button onClick={connect}>Connect</button>
+      <button onClick={disconnect}>Disconnect</button>
+
+      {/* End test */}
+
       {/* Main Content Box */}
       <div className="start-box">
         <h1 className="glow-text">Laser Tag Treasure Hunt</h1>
@@ -100,8 +155,9 @@ function StartPage() {
           <button className="glow-btn" onClick={handleCreateLobby}>Create New Lobby</button>
         </div>
 
-        <p className="note">Press Enter to join. 4–20 players.</p>
+        <p className="note">Press Enter to join. 4-20 players.</p>
       </div>
+
     </div>
   );
 }
