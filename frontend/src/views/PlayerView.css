@@ -91,6 +91,6 @@
     }
     100% {
         opacity: 0;
-        transform: translate(calc(-100% - 5vw), calc(-50% - 30vh)) scale(0.5);
+        transform: translate(calc(-100% - 15vw), calc(-50% - 30vh)) scale(0.5);
     }
 }
