@@ -43,7 +43,10 @@ export default function PlayerView() {
       if (videoRef.current && modelLoaded) {
         const predictions = await model.detect(videoRef.current);
         // You can draw predictions here
-        console.log(predictions);
+        // console.log(predictions);
+        for (const pred of predictions) {
+          console.log(`Detected ${pred.class} with confidence ${pred.score}, bounding box: ${pred.bbox}`);
+        }
         drawBoxes(predictions);
       }
       animationId = requestAnimationFrame(detectFrame); // Schedule next frame
