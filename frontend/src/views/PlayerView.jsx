@@ -8,6 +8,8 @@ export default function PlayerView() {
   const canvasRef = useRef();
   const [particles, setParticles] = useState([]);
 
+  const predictionsRef = useRef([]);
+
   useEffect(() => {
     let model;
     let modelLoaded = false;
