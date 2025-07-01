@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StartPage.css'; // Create this file for basic styling
 import socket from '../socket';
-// For testing
+
 
 function StartPage() {
   const [isConnected, setIsConnected] = useState(socket.connected);
-  const [events, setEvents] = useState<any[]>([]);
+  // const [lobbyState, setLobbyState] = useState<Lobby|null>(null);
 
   useEffect(() => {
     function onConnect() {
@@ -17,41 +17,38 @@ function StartPage() {
       setIsConnected(false);
     }
 
-    function onEvent(value: any) {
-      setEvents(previous => [...previous, value]);
-    }
-
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
-    socket.on('foo', onEvent);
 
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
-      socket.off('foo', onEvent);
     };
   }, []);
 
-  function connect() {
-    socket.connect();
-  }
-
-  function disconnect() {
-    socket.disconnect();
-  }
 
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [lobbyCode, setLobbyCode] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [username, setUsername] = useState<string>('');
+  const [lobbyCode, setLobbyCode] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleJoinLobby = () => {
     if (!username.trim() || !lobbyCode.trim()) {
       setErrorMessage("Username and Lobby Code are required to join.");
       return;
     }
-    setErrorMessage('');
-    navigate(`/lobby/${lobbyCode.trim().toUpperCase()}`, { state: { username } });
+
+    if (isConnected) {
+      socket.emit('joinLobby', { playerName: username.trim(), lobbyCode: lobbyCode.trim() });
+      setErrorMessage('');
+      console.log(`Attempting to join lobby: ${lobbyCode.trim().toUpperCase()} with username: ${username.trim()}`);
+      // TODO: do some server validation before navigating to lobby page
+      navigate(`/lobby`, { state: { username, lobbyCode, isLobbyCreator: false } });
+      console.log("Navigate called");
+    } else {
+      setErrorMessage("Connection hasn't started.");
+      return;
+    }
   };
 
   const handleCreateLobby = () => {
@@ -59,8 +56,17 @@ function StartPage() {
       setErrorMessage("Username is required to create a lobby.");
       return;
     }
-    setErrorMessage('');
-    navigate(`/lobby/NEW_LOBBY_ID`, { state: { username } });
+
+    if (isConnected) {
+      socket.emit('createLobby', { playerName: username.trim(), lobbyCode: lobbyCode.trim() });
+      setErrorMessage('');
+      console.log(`Attempting to create lobby with username: ${username.trim()} and lobbyCode: ${lobbyCode.trim()}`);
+      // TODO: do some server validation before navigating to lobby page
+      navigate(`/lobby`, { state: { username, lobbyCode, isLobbyCreator: true } });
+      console.log("navigate called");
+    } else {
+      setErrorMessage("Connection hasn't started.");
+    }
   };
 
   useEffect(() => {
@@ -103,20 +109,7 @@ function StartPage() {
       </div>
 
       {/* State test */}
-      <p>State: {'' + isConnected}</p>
-
-      {/* Events test */}
-      <ul>
-        {
-          events.map((event, index) =>
-            <li key={index}>{event}</li>
-          )
-        }
-      </ul>
-
-      {/* Connection manager test */}
-      <button onClick={connect}>Connect</button>
-      <button onClick={disconnect}>Disconnect</button>
+      <p>Socket connected: {'' + isConnected}</p>
 
       {/* End test */}
 
