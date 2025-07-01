@@ -26,17 +26,66 @@ app.get("/api", (req, res) => {
 });
 
 
-// Socket logic
+// Socket logic : TODO: reduce duplication, same type is used for frontend
+type Player = { id: string, name: string };
+type Lobby = {
+  players: Player[];
+  state: 'waiting' | 'active' | 'ended';
+};
+
+const lobbies: Record<string, Lobby> = {};
+
 io.on('connection', (socket: Socket) => {
   console.log("A user connected");
+
+  socket.on('createLobby', ({ playerName, lobbyCode }) => {
+    lobbies[lobbyCode] = {
+      state: 'waiting',
+      players: [{ id: socket.id, name: playerName }],
+    };
+    socket.join(lobbyCode);
+
+    io.to(lobbyCode).emit('lobbyUpdated', lobbies[lobbyCode]);
+
+    console.log("Lobby with name: " + lobbyCode + " created by " + playerName + " . Lobby updated.");
+  });
+
+    // Join lobby
+  socket.on('joinLobby', ({ playerName, lobbyCode }) => {
+    const lobby = lobbies[lobbyCode];
+    if (!lobby) {
+      socket.emit('error', 'Lobby not found');
+      return;
+    }
+    lobby.players.push({ id: socket.id, name: playerName });
+    socket.join(lobbyCode);
+
+    io.to(lobbyCode).emit('lobbyUpdated', lobby);
+  });
+
   socket.on('disconnect', () => {
     console.log('user disconnected');
+
+    // Leave current lobby
+    for (const lobbyCode in lobbies) {
+      const lobby = lobbies[lobbyCode];
+      const index = lobby.players.findIndex(p => p.id === socket.id);
+      if (index !== -1) {
+        lobby.players.splice(index, 1);
+        io.to(lobbyCode).emit('lobbyUpdated', lobby);
+      }
+    }
   });
 });
 
 server.listen(port, () => {
   console.log(`Server listening at http://0.0.0.0:${port}`);
 });
+
+// Debug: Log lobbies every 5 seconds
+// setInterval(() => {
+//   console.log('Current lobbies:', JSON.stringify(lobbies, null, 2));
+// }, 5000);
 
 // Graceful shutdown function
 const gracefulShutdown = (signal: string) => {
