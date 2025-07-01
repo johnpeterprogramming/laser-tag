@@ -34,28 +34,38 @@
 }
 
 .gun-image {
-    height: 150px;
-    object-fit: contain;
+    height: 250px;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: -18px;
+    z-index: 10;
     user-select: none;
-    transform: rotate(20deg);
+    pointer-events: none; /* optional */
 }
 
 .shoot-particle {
     position: absolute;
     top: 80%;
-    left: 65%;
-    width: 20px;
-    height: 20px;
-    background: red;
-    border-radius: 50%;
-    box-shadow: 0 0 20px yellow;
+    left: calc(50% + 15px);
+    width: 8px;
+    height: 50px;
+    background: purple;
+    border-radius: 2px;
+    box-shadow: 0 0 20px blue;
     transform: translate(-50%, -50%) scale(1);
-    animation: shoot-to-center 0.6s ease-out forwards;
+    animation: shoot-to-center 0.6s linear forwards;
     z-index: 12;
+    box-shadow:
+        0 0 8px 2px #9f00ff,
+        0 0 16px 6px #7f00ff,
+        0 0 32px 12px #4b00e0;
+    filter: blur(0.5px);
 }
 
 .gun-image.shoot-recoil {
-    transform: rotate(10deg);
+    transform: translate(-50%, 50px);
     transition: transform 0.1s ease;
 }
 
@@ -66,6 +76,6 @@
     }
     100% {
         opacity: 0;
-        transform: translate(calc(-100% - 5vw), calc(-50% - 30vh)) scale(0.5);
+        transform: translate(calc(-50%), calc(-600%)) scale(0.5);
     }
 }
