@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StartPage.css'; // Create this file for basic styling
 import socket from '../socket';
+import type { joinOrCreateLobbyResponse } from './types';
 
 
 function StartPage() {
   const [isConnected, setIsConnected] = useState(socket.connected);
-  // const [lobbyState, setLobbyState] = useState<Lobby|null>(null);
+  const navigate = useNavigate();
+  const [username, setUsername] = useState<string>('');
+  const [lobbyCode, setLobbyCode] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     function onConnect() {
@@ -17,39 +21,50 @@ function StartPage() {
       setIsConnected(false);
     }
 
+    function onLobbyCreate(lobbyResponse : joinOrCreateLobbyResponse ) {
+      if (!lobbyResponse.success) {
+        setErrorMessage(lobbyResponse.message);
+      } else {
+        navigate(`/lobby`, { state: { username, lobby: lobbyResponse?.lobby } });
+      }
+    }
+
+    function onLobbyJoin(lobbyResponse : joinOrCreateLobbyResponse ) {
+      if (!lobbyResponse.success) {
+        setErrorMessage(lobbyResponse.message);
+      } else {
+        navigate(`/lobby`, { state: { username, lobby: lobbyResponse?.lobby } });
+      }
+    }
+
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+    socket.on('createLobbyResponse', onLobbyCreate);
+    socket.on('joinLobbyResponse', onLobbyJoin);
 
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      socket.off('createLobbyResponse', onLobbyCreate);
+      socket.off('joinLobbyResponse', onLobbyJoin);
     };
-  }, []);
-
-
-  const navigate = useNavigate();
-  const [username, setUsername] = useState<string>('');
-  const [lobbyCode, setLobbyCode] = useState<string>('');
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  }, [navigate, username, lobbyCode]);
 
   const handleJoinLobby = () => {
-    if (!username.trim() || !lobbyCode.trim()) {
+    if (!username || !lobbyCode) {
       setErrorMessage("Username and Lobby Code are required to join.");
       return;
     }
 
     if (isConnected) {
-      socket.emit('joinLobby', { playerName: username.trim(), lobbyCode: lobbyCode.trim() });
-      setErrorMessage('');
-      console.log(`Attempting to join lobby: ${lobbyCode.trim().toUpperCase()} with username: ${username.trim()}`);
-      // TODO: do some server validation before navigating to lobby page
-      navigate(`/lobby`, { state: { username, lobbyCode, isLobbyCreator: false } });
-      console.log("Navigate called");
+      socket.emit('joinLobby', ({ playerName: username.trim(), lobbyCode: lobbyCode.trim() }));
+      // TODO: add indication of loading
     } else {
       setErrorMessage("Connection hasn't started.");
       return;
     }
   };
+
 
   const handleCreateLobby = () => {
     if (!username.trim()) {
@@ -59,11 +74,7 @@ function StartPage() {
 
     if (isConnected) {
       socket.emit('createLobby', { playerName: username.trim(), lobbyCode: lobbyCode.trim() });
-      setErrorMessage('');
-      console.log(`Attempting to create lobby with username: ${username.trim()} and lobbyCode: ${lobbyCode.trim()}`);
-      // TODO: do some server validation before navigating to lobby page
-      navigate(`/lobby`, { state: { username, lobbyCode, isLobbyCreator: true } });
-      console.log("navigate called");
+      // TODO: add indication of loading
     } else {
       setErrorMessage("Connection hasn't started.");
     }
@@ -107,9 +118,6 @@ function StartPage() {
         <div className="laser left-to-right"></div>
         <div className="laser right-to-left"></div>
       </div>
-
-      {/* State test */}
-      <p>Socket connected: {'' + isConnected}</p>
 
       {/* End test */}
 
