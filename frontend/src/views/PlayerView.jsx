@@ -113,10 +113,17 @@ export default function PlayerView() {
     return results
   }
 
+  
+
   const handleShoot = () => {
     setRecoil(true);
-    const target = getTargetPrediction(predictionsRef.current);
-    console.log("Target:", target);
+    const targets = getTargetPrediction(predictionsRef.current);
+    if (targets.length > 0) {
+      for (const target of targets) {
+        console.log("Hit target:", target);
+        // Here you can handle the hit logic, e.g., send a hit event to the server
+      }
+    }
     setTimeout(() => setRecoil(false), 100); // reset after 100ms
 
     const id = Date.now();
