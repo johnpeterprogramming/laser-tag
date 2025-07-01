@@ -4,9 +4,9 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #282c34; 
-  color: white;
-  font-family: 'Inter', Arial, sans-serif; 
+  background-color: #fbf1c7; /* Gruvbox light bg */
+  color: #3c3836; /* Gruvbox dark brown text */
+  font-family: "Inter", Arial, sans-serif;
   padding: 20px;
   text-align: center;
   border-radius: 10px;
@@ -14,14 +14,14 @@
 
 .lobby-page-container h1 {
   margin-bottom: 20px;
-  color: #61dafb; 
+  color: #458588; /* Gruvbox teal */
   font-size: 2.5em;
 }
 
 .lobby-status {
   font-size: 1.1em;
   margin-bottom: 25px;
-  color: #a0a0a0;
+  color: #928374; /* Gruvbox muted gray */
 }
 
 .player-list {
@@ -30,14 +30,14 @@
   margin: 20px 0;
   width: 80%;
   max-width: 300px;
-  background-color: #3a3f47;
+  background-color: #ebdbb2; /* Gruvbox light panel */
   border-radius: 8px;
   overflow: hidden;
 }
 
 .player-list li {
   padding: 12px 15px;
-  border-bottom: 1px solid #4a4f57;
+  border-bottom: 1px solid #d5c4a1; /* Gruvbox light border */
   font-size: 1em;
   display: flex;
   justify-content: space-between;
@@ -49,37 +49,39 @@
 }
 
 .current-player {
-  background-color: #55606e; 
+  background-color: #d79921; /* Gruvbox yellow/orange */
   font-weight: bold;
-  color: #e0e0e0;
+  color: #3c3836;
 }
 
 .start-game-button {
   padding: 15px 30px;
   margin-top: 30px;
-  background-color: #4CAF50; 
-  color: white;
+  background-color: #98971a; /* Gruvbox green */
+  color: #fbf1c7; /* Gruvbox background as text for contrast */
   border: none;
   border-radius: 8px;
   font-size: 1.2em;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition:
+    background-color 0.3s ease,
+    transform 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .start-game-button:hover:not(:disabled) {
-  background-color: #45a049;
+  background-color: #b8bb26; /* Lighter Gruvbox green */
   transform: translateY(-2px);
 }
 
 .start-game-button:disabled {
-  background-color: #666;
+  background-color: #a89984; /* Gruvbox gray for disabled */
   cursor: not-allowed;
   opacity: 0.7;
 }
 
 .error-message {
-  color: #ff6347;
+  color: #cc241d; /* Gruvbox red */
   margin-top: 15px;
   font-weight: bold;
 }
@@ -87,5 +89,5 @@
 .waiting-message {
   margin-top: 20px;
   font-size: 1.1em;
-  color: #bbb;
+  color: #7c6f64; /* Gruvbox muted gray */
 }
