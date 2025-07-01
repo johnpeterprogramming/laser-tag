@@ -1,66 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './LobbyPage.css';
-
-interface Player {
-  id: string;
-  username: string;
-}
+import type { Lobby, Player } from './types';
+import socket from '../socket';
 
 function LobbyPage() {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const location = useLocation();
-  const navigate = useNavigate();
+  const { username, lobbyCode, isLobbyCreator } = location.state || {};
+  // const navigate = useNavigate();
 
-  const initialUsername = (location.state as { username?: string })?.username || 'Guest';
+  // const [username] = useState<string>(initialUsername); // Current user's username
+  const emptyLobby: Lobby = { players: [], state: 'waiting' };
+  const [lobbyState, setLobbyState] = useState<Lobby>(emptyLobby);
 
-  const [username] = useState<string>(initialUsername);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [lobbyStatus, setLobbyStatus] = useState<string>('Lobby ready with mock data!');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [isLobbyCreator, setIsLobbyCreator] = useState<boolean>(true);
+  // const [isLobbyCreator, setIsLobbyCreator] = useState<boolean>(true); // Mock: Assume current user is host for testing 'Start Game' button
 
+  // Handle lobby updates
   useEffect(() => {
-    const mockPlayers: Player[] = [
-      { id: 'mockHost1', username: 'HostPlayer' },
-      { id: 'mockPlayer2', username: 'Alice' },
-      { id: 'mockPlayer3', username: 'Bob' },
-    ];
-    if (!mockPlayers.some(p => p.username === username)) {
-      mockPlayers.push({ id: `mockUser_${Date.now()}`, username: username });
-    }
-    setPlayers(mockPlayers);
+    if (lobbyCode && username) {
+      socket.on("lobbyUpdated", (lobby: Lobby) => {
+        setLobbyState(lobby);
 
-    const statusTimer = setTimeout(() => {
-      setLobbyStatus('Waiting for more players...');
-    }, 3000);
-
-    const joinTimer = setTimeout(() => {
-      const newPlayer: Player = { id: 'mockNewGuy', username: 'Charlie' };
-      setPlayers(prevPlayers => {
-        if (!prevPlayers.some(p => p.id === newPlayer.id)) {
-          return [...prevPlayers, newPlayer];
-        }
-        return prevPlayers;
+        console.log(lobby);
       });
-      setLobbyStatus(`${newPlayer.username} joined the mock lobby!`);
-    }, 5000);
-
-    return () => {
-      clearTimeout(statusTimer);
-      clearTimeout(joinTimer);
-    };
-  }, [username]);
+      return () => {
+        socket.off("lobbyUpdated");
+      }
+    } else {
+      console.log("Didn't update lobby, socket isn't connected yet.");
+    }
+  }, [lobbyCode, username]);
 
   const handleStartGame = () => {
-    if (players.length < 4) {
-      setErrorMessage(`Need at least 4 players to start. Current: ${players.length}`);
-      return;
-    }
-    setErrorMessage('');
-    setLobbyStatus('Mock Game Starting!');
-    navigate(`/game/${lobbyId}`, { state: { username, mockGameData: "Your mock game has begun!" } });
-  };
+    // TODO: Start game
+    alert("Starting game");
+  }
+
 
   return (
     <div className="lobby-page-container">
@@ -91,19 +68,19 @@ function LobbyPage() {
       <div className="laser laser-left-to-right"></div>
       <div className="laser laser-right-to-left"></div>
 
-      <h1>Lobby: {lobbyId}</h1>
-      <p className="lobby-status">{lobbyStatus}</p>
+      <h1>Lobby: {lobbyCode}</h1>
+      <p className="lobby-status">{lobbyState.state}</p>
       {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-      <h2>Players ({players.length}/20):</h2>
-      {players.length === 0 ? (
+      <h2>Players ({lobbyState.players.length ?? 0}/20):</h2>
+      {lobbyState.players.length === 0 ? (
         <p>No players in this lobby yet.</p>
       ) : (
         <ul className="player-list">
-          {players.map((player) => (
-            <li key={player.id} className={player.username === username ? 'current-player' : ''}>
-              {player.username} {player.username === username && '(You)'}
-              {isLobbyCreator && players[0] && player.id === players[0].id && ' (Host)'}
+          {lobbyState.players.map((player) => (
+            <li key={player.id} className={player.name === username ? 'current-player' : ''}>
+              {player.name} {player.name === username && '(You)'}
+              {(isLobbyCreator ?? false) && lobbyState.players[0] && player.id === lobbyState.players[0].id && ' (Host)'}
             </li>
           ))}
         </ul>
@@ -113,12 +90,12 @@ function LobbyPage() {
         <button
           onClick={handleStartGame}
           className="start-game-button"
-          disabled={players.length < 4}
+          disabled={lobbyState.players.length < 4} // Disable if not enough players (mock check)
         >
-          {players.length < 4 ? `Need ${4 - players.length} more players` : 'Start Game'}
+          {lobbyState.players.length < 4 ? `Need ${4 - lobbyState.players.length} more players` : 'Start Game'}
         </button>
       )}
-      {!isLobbyCreator && (
+      {!(isLobbyCreator ?? false) && ( // This part won't show with isLobbyCreator true, but kept for future
         <p className="waiting-message">Waiting for the host to start the game...</p>
       )}
     </div>
