@@ -1,13 +1,20 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./SpectatorView.css";
 
-export default function SpectatorView() {
-  const videoRef = useRef(null);
-  const [error, setError] = useState(null);
+interface Player {
+  name: string;
+  level: number;
+  health: number;
+  score: number;
+  status: string;
+}
 
+function SpectatorView() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Player details — example data
-  const player = {
+  const player: Player = {
     name: "Player One",
     level: 5,
     health: 75,
@@ -15,10 +22,9 @@ export default function SpectatorView() {
     status: "Alive",
   };
 
-
   // Get camera stream
   useEffect(() => {
-    let activeStream;
+    let activeStream: MediaStream | undefined;
 
     const enableCamera = async () => {
       try {
@@ -39,7 +45,7 @@ export default function SpectatorView() {
 
     return () => {
       if (activeStream) {
-        activeStream.getTracks().forEach((track) => track.stop());
+        activeStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
       }
     };
   }, []);
@@ -97,3 +103,5 @@ export default function SpectatorView() {
     </div>
   );
 }
+
+export default SpectatorView;

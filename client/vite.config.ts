@@ -15,5 +15,8 @@ export default defineConfig(({ mode }) => {
             port: Number(env.VITE_PORT) || 5173,
             hmr: false,
         },
+        build: {
+            outDir: '../build'
+        }
     };
 });

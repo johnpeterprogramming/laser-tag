@@ -1,26 +1,43 @@
-import React, { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import * as bodyPix from "@tensorflow-models/body-pix";
 import "@tensorflow/tfjs";
 import "./PlayerView.css";
 
-export default function PlayerView() {
-  const videoRef = useRef();
-  const canvasRef = useRef();
-  const tempCanvasRef = useRef();
-  const [particles, setParticles] = useState([]);
-  const [bodyPixNet, setBodyPixNet] = useState(null);
-  const predictionsRef = useRef([]);
+// export default function PlayerView() {
+//   const videoRef = useRef();
+//   const canvasRef = useRef();
+//   const tempCanvasRef = useRef();
+//   const [particles, setParticles] = useState([]);
+//   const [bodyPixNet, setBodyPixNet] = useState(null);
+//   const predictionsRef = useRef([]);
+
+//   useEffect(() => {
+//     let model;
+//     let bodyPixModel;
+interface Particle {
+  id: number;
+}
+
+function PlayerView() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [bodyPixNet, setBodyPixNet] = useState<bodyPix.BodyPix | null>(null);
+  const predictionsRef = useRef<cocoSsd.DetectedObject[]>([]);
 
   useEffect(() => {
-    let model;
-    let bodyPixModel;
+    let model: cocoSsd.ObjectDetection;
     let modelLoaded = false;
-    let stream;
-    let animationId;
+    let stream: MediaStream;
+    let animationId: number;
 
-    const canvas = (predictions) => {
+    const canvas = (predictions: cocoSsd.DetectedObject[]) => {
+      if (!canvasRef.current) return;
+      
       const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
+
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       // crosshair
       ctx.strokeStyle = "black";
@@ -54,7 +71,6 @@ export default function PlayerView() {
     const loadModel = async () => {
       model = await cocoSsd.load();
       const bpNet = await bodyPix.load();
-      bodyPixModel = bpNet;
       modelLoaded = true;
       setBodyPixNet(bpNet);
       detectFrame();
@@ -85,6 +101,9 @@ export default function PlayerView() {
           };
           loadModel();
         }
+      })
+      .catch((error) => {
+        console.error("Error accessing camera:", error);
       });
 
     return () => {
@@ -94,7 +113,9 @@ export default function PlayerView() {
   }, []);
   const [recoil, setRecoil] = useState(false);
 
-  function getTargetPrediction(predictions) {
+  function getTargetPrediction(predictions: cocoSsd.DetectedObject[]): cocoSsd.DetectedObject[] {
+    if (!canvasRef.current) return [];
+    
     const cx = canvasRef.current.width / 2;
     const cy = canvasRef.current.height / 2;
     const results = [];
@@ -110,7 +131,7 @@ export default function PlayerView() {
     return results
   }
 
-  async function segmentShirtColor(video, bbox) {
+  async function segmentShirtColor(video: HTMLVideoElement, bbox: number[]): Promise<string | null> {
   if (!bodyPixNet || !video || !bbox) return null;
 
   const SMALL_WIDTH = 350;
@@ -133,6 +154,8 @@ export default function PlayerView() {
   tempCanvas.height = SMALL_HEIGHT;
   const tempCtx = tempCanvas.getContext("2d");
   
+  if (!tempCtx) return null;
+  
   // Draw the cropped bounding box region, scaled down
   tempCtx.drawImage(
     video, // source
@@ -145,7 +168,6 @@ export default function PlayerView() {
     internalResolution: "low",
     segmentationThreshold: 0.2,
     scoreThreshold: 0.2,
-    segmentBodyParts: true,
   });
 
   // Process results...
@@ -211,7 +233,7 @@ export default function PlayerView() {
     console.log(`Mode color found with ${maxCount} occurrences:`, modeColor);
     console.log(`Total unique colors: ${colorFrequency.size}`);
     
-    return modeColor;
+    return modeColor ? `rgb(${modeColor.r},${modeColor.g},${modeColor.b})` : null;
   } else {
     console.log("No torso pixels found");
     return null;
@@ -223,7 +245,7 @@ export default function PlayerView() {
   const handleShoot = async () => {
     setRecoil(true);
     const targets = getTargetPrediction(predictionsRef.current);
-    if (targets.length > 0) {
+    if (targets.length > 0 && videoRef.current) {
       for (const target of targets) {
         console.log("Hit target:", target);
         const color = await segmentShirtColor(videoRef.current, target.bbox);
@@ -269,3 +291,5 @@ export default function PlayerView() {
     </div>
   );
 }
+
+export default PlayerView;
