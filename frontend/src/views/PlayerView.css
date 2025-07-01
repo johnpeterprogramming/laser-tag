@@ -49,3 +49,48 @@
 .shoot-button:hover {
     background-color: #9d0006;
 }
+.gun-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(20%);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.gun-image {
+    height: 150px;
+    object-fit: contain;
+    user-select: none;
+    transform: rotate(20deg);
+}
+
+.shoot-particle {
+    position: absolute;
+    top: 80%;
+    left: 65%;
+    width: 20px;
+    height: 20px;
+    background: red;
+    border-radius: 50%;
+    box-shadow: 0 0 20px yellow;
+    transform: translate(-50%, -50%) scale(1);
+    animation: shoot-to-center 0.6s ease-out forwards;
+    z-index: 12;
+}
+
+.gun-image.shoot-recoil {
+    transform: rotate(10deg);
+    transition: transform 0.1s ease;
+}
+
+@keyframes shoot-to-center {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(-100% - 5vw), calc(-50% - 30vh)) scale(0.5);
+    }
+}
