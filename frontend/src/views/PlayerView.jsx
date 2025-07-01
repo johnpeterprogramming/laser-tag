@@ -13,9 +13,27 @@ export default function PlayerView() {
     let stream;
     let animationId;
 
-    const drawBoxes = (predictions) => {
+    const canvas = (predictions) => {
       const ctx = canvasRef.current.getContext("2d");
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      // crosshair
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(canvasRef.current.width / 2, canvasRef.current.height / 2 - 10);
+      ctx.lineTo(canvasRef.current.width / 2, canvasRef.current.height / 2 + 10);
+      ctx.moveTo(canvasRef.current.width / 2 - 10, canvasRef.current.height / 2);
+      ctx.lineTo(canvasRef.current.width / 2 + 10, canvasRef.current.height / 2);
+      ctx.stroke();
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(canvasRef.current.width / 2, canvasRef.current.height / 2 - 10);
+      ctx.lineTo(canvasRef.current.width / 2, canvasRef.current.height / 2 + 10);
+      ctx.moveTo(canvasRef.current.width / 2 - 10, canvasRef.current.height / 2);
+      ctx.lineTo(canvasRef.current.width / 2 + 10, canvasRef.current.height / 2);
+      ctx.stroke();
+      // boxes
       predictions.forEach((pred) => {
         if (pred.class === "person" && pred.score > 0.5) {
           ctx.strokeStyle = "red";
@@ -23,11 +41,11 @@ export default function PlayerView() {
           ctx.strokeRect(...pred.bbox);
           ctx.font = "16px Arial";
           ctx.fillStyle = "red";
-          ctx.fillText(
-            `${pred.class} (${(pred.score * 100).toFixed(1)}%)`,
-            pred.bbox[0],
-            pred.bbox[1] > 20 ? pred.bbox[1] - 5 : 10,
-          );
+          // ctx.fillText(
+          //   `${pred.class} (${(pred.score * 100).toFixed(1)}%)`,
+          //   pred.bbox[0],
+          //   pred.bbox[1] > 20 ? pred.bbox[1] - 5 : 10,
+          // );
         }
       });
     };
@@ -41,7 +59,7 @@ export default function PlayerView() {
     const detectFrame = async () => {
       if (videoRef.current && modelLoaded) {
         const predictions = await model.detect(videoRef.current);
-        drawBoxes(predictions);
+        canvas(predictions);
       }
       animationId = requestAnimationFrame(detectFrame);
     };
@@ -52,6 +70,12 @@ export default function PlayerView() {
         stream = mediaStream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            if (canvasRef.current && videoRef.current) {
+              canvasRef.current.width = videoRef.current.videoWidth;
+              canvasRef.current.height = videoRef.current.videoHeight;
+            }
+          };
           loadModel();
         }
       });
@@ -69,20 +93,20 @@ export default function PlayerView() {
 
   return (
     <div className="player-wrapper">
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        width={640}
-        height={480}
-        className="player-video"
-      />
-      <canvas
-        ref={canvasRef}
-        width={640}
-        height={480}
-        className="player-canvas"
-      />
+
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          className="player-video"
+          muted
+        />
+
+        <canvas
+          ref={canvasRef}
+          className="player-canvas"
+        />
+
       <button className="shoot-button" onClick={handleShoot}>
         Shoot
       </button>
