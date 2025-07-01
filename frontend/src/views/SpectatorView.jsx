@@ -1,8 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
+import "./SpectatorView.css";
 
 export default function SpectatorView() {
   const videoRef = useRef(null);
   const [error, setError] = useState(null);
+
+  // Example player data — replace with your real data or props
+  const player = {
+    name: "Player One",
+    level: 5,
+    health: 75,
+    score: 12345,
+    status: "Alive",
+  };
 
   useEffect(() => {
     let activeStream;
@@ -10,7 +20,7 @@ export default function SpectatorView() {
     const enableCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" }, // or "user"
+          video: { facingMode: "environment" },
         });
         activeStream = stream;
         if (videoRef.current) {
@@ -32,18 +42,42 @@ export default function SpectatorView() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
-      <h1 className="text-3xl font-bold mb-4">Spectator View</h1>
+    <div className="spectator-container">
+      <h1 className="title">Spectator View</h1>
+
       {error ? (
-        <div className="bg-red-600 text-white px-4 py-2 rounded">{error}</div>
+        <div className="error-message">{error}</div>
       ) : (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="rounded-lg shadow-lg w-full max-w-md aspect-video"
-        />
+        <div className="video-wrapper">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="camera-video"
+          />
+          <div className="overlay-info">
+            <div className="health-bar-container">
+              <div className="health-labels">
+                <span>Health</span>
+                <span>{player.health}%</span>
+              </div>
+              <div className="health-bar-track">
+                <div
+                  className="health-bar-fill"
+                  style={{ width: `${player.health}%` }}
+                ></div>
+              </div>
+            </div>
+
+            <div className="player-details">
+              <p className="player-name">{player.name}</p>
+              <p className="player-level">Level: {player.level}</p>
+              <p className="player-score">Score: {player.score}</p>
+              <p className="player-status">Status: {player.status}</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
