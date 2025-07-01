@@ -1,25 +1,55 @@
-.start-page-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background-color: #fbf1c7; /* Gruvbox light background */
-  color: #3c3836; /* Gruvbox dark brown text */
-  font-family: Arial, sans-serif;
-  padding: 20px;
+@keyframes fadeInPop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.start-page-container h1 {
+@keyframes floatShape {
+  0% { transform: translateY(0); opacity: 0.1; }
+  50% { transform: translateY(-12px); opacity: 0.2; }
+  100% { transform: translateY(0); opacity: 0.1; }
+}
+
+.start-page-container {
+  background-color: #fbf1c7;
+  color: #3c3836;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.start-box {
+  background-color: #ebdbb2;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  animation: fadeInPop 0.6s ease;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.start-box h1 {
+  color: #458588;
   margin-bottom: 30px;
-  color: #458588; /* Gruvbox teal */
+  font-size: 1.8em;
 }
 
 .input-group {
   margin-bottom: 20px;
   text-align: left;
-  width: 80%;
-  max-width: 400px;
 }
 
 .input-group label {
@@ -32,49 +62,199 @@
 .input-group input {
   width: 100%;
   padding: 10px;
-  border: 1px solid #d5c4a1; /* Gruvbox tan border */
+  border: 1px solid #d5c4a1;
   border-radius: 5px;
   font-size: 1em;
-  background-color: #ebdbb2; /* Gruvbox light panel */
+  background-color: #f2e5bc;
   color: #3c3836;
+  transition: box-shadow 0.3s ease;
+}
+
+.input-group input:focus {
+  outline: none;
+  box-shadow: 0 0 8px #bdae93;
 }
 
 .input-group input::placeholder {
-  color: #928374; /* Gruvbox muted gray */
+  color: #928374;
 }
 
 .button-group {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   margin-top: 20px;
-  width: 80%;
-  max-width: 400px;
 }
 
 .button-group button {
   flex: 1;
-  padding: 12px 20px;
+  padding: 12px;
   border: none;
-  border-radius: 5px;
-  font-size: 1.1em;
-  cursor: pointer;
-  background-color: #98971a; /* Gruvbox green */
+  border-radius: 8px;
+  font-size: 1em;
+  background-color: #98971a;
   color: #fbf1c7;
-  transition: background-color 0.3s ease;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.3s, background-color 0.3s;
 }
 
-.button-group button:hover:not(:disabled) {
-  background-color: #b8bb26; /* Gruvbox lighter green */
+.button-group button:hover {
+  background-color: #b8bb26;
+  transform: translateY(-2px);
+  box-shadow: 0 0 12px rgba(152, 151, 26, 0.4);
 }
 
 .error-message {
-  color: #cc241d; /* Gruvbox red */
-  margin-top: 15px;
+  color: #cc241d;
+  margin-top: 10px;
   font-weight: bold;
 }
 
 .note {
   margin-top: 30px;
   font-size: 0.9em;
-  color: #7c6f64; /* Gruvbox muted gray */
+  color: #7c6f64;
+}
+
+/* 🎮 Floating Controller Shapes 🎮 */
+.floating-shapes {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.shape {
+  position: absolute;
+  font-size: 2.8rem;
+  opacity: 0.1;
+  animation: floatShape 6s infinite ease-in-out;
+}
+
+.shape:nth-child(1) {
+  top: 10%;
+  left: 15%;
+  animation-delay: 0s;
+}
+.shape:nth-child(2) {
+  top: 60%;
+  left: 80%;
+  animation-delay: 1s;
+}
+.shape:nth-child(3) {
+  top: 35%;
+  left: 50%;
+  animation-delay: 2s;
+}
+.shape:nth-child(4) {
+  top: 80%;
+  left: 10%;
+  animation-delay: 3s;
+}
+
+/* Gun Target Shapes */
+.svg-target {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  opacity: 0.12;
+  z-index: 0;
+  pointer-events: none;
+  animation: floatShape 5s infinite ease-in-out;
+}
+
+.svg-target:nth-child(5) {
+  top: 25%;
+  left: 75%;
+  stroke: #98971a;
+  animation-delay: 0.5s;
+}
+
+.svg-target:nth-child(6) {
+  top: 70%;
+  left: 20%;
+  stroke: #cc241d;
+  animation-delay: 1.5s;
+}
+
+/* 🔴 Laser Animation */
+.laser-container {
+  position: absolute;
+  top: 30%;
+  width: 100%;
+  height: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.laser {
+  position: absolute;
+  top: 0;
+  width: 100px;
+  height: 2px;
+  background: linear-gradient(to right, rgba(251, 73, 52, 0.35), rgba(254, 128, 25, 0.35));
+  box-shadow: 0 0 12px rgba(251, 73, 52, 0.25);
+  opacity: 0;
+  border-radius: 1px;
+}
+
+.laser.left-to-right {
+  left: -100px;
+  animation: laserLeftToRight 10s linear infinite;
+}
+
+.laser.right-to-left {
+  right: -100px;
+  animation: laserRightToLeft 14s linear infinite;
+  animation-delay: 7s;
+}
+
+
+@keyframes laserLeftToRight {
+  0% {
+    left: -100px;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.2;
+  }
+  90% {
+    opacity: 0.2;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes laserRightToLeft {
+  0% {
+    right: -100px;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.2;
+  }
+  90% {
+    opacity: 0.2;
+  }
+  100% {
+    right: 100%;
+    opacity: 0;
+  }
+}
+
+@media (max-width: 500px) {
+  .start-box {
+    padding: 30px 20px;
+  }
+
+  .shape {
+    font-size: 2rem;
+  }
+
+  .svg-target {
+    width: 50px;
+    height: 50px;
+  }
 }

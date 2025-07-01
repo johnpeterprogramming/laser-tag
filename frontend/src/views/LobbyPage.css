@@ -4,24 +4,26 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #fbf1c7; /* Gruvbox light bg */
-  color: #3c3836; /* Gruvbox dark brown text */
+  background-color: #fbf1c7;
+  color: #3c3836;
   font-family: "Inter", Arial, sans-serif;
   padding: 20px;
   text-align: center;
   border-radius: 10px;
+  position: relative;
+  overflow: hidden;
 }
 
 .lobby-page-container h1 {
   margin-bottom: 20px;
-  color: #458588; /* Gruvbox teal */
+  color: #458588;
   font-size: 2.5em;
 }
 
 .lobby-status {
   font-size: 1.1em;
   margin-bottom: 25px;
-  color: #928374; /* Gruvbox muted gray */
+  color: #928374;
 }
 
 .player-list {
@@ -30,14 +32,14 @@
   margin: 20px 0;
   width: 80%;
   max-width: 300px;
-  background-color: #ebdbb2; /* Gruvbox light panel */
+  background-color: #ebdbb2;
   border-radius: 8px;
   overflow: hidden;
 }
 
 .player-list li {
   padding: 12px 15px;
-  border-bottom: 1px solid #d5c4a1; /* Gruvbox light border */
+  border-bottom: 1px solid #d5c4a1;
   font-size: 1em;
   display: flex;
   justify-content: space-between;
@@ -49,7 +51,7 @@
 }
 
 .current-player {
-  background-color: #d79921; /* Gruvbox yellow/orange */
+  background-color: #d79921;
   font-weight: bold;
   color: #3c3836;
 }
@@ -57,8 +59,8 @@
 .start-game-button {
   padding: 15px 30px;
   margin-top: 30px;
-  background-color: #98971a; /* Gruvbox green */
-  color: #fbf1c7; /* Gruvbox background as text for contrast */
+  background-color: #98971a;
+  color: #fbf1c7;
   border: none;
   border-radius: 8px;
   font-size: 1.2em;
@@ -70,18 +72,18 @@
 }
 
 .start-game-button:hover:not(:disabled) {
-  background-color: #b8bb26; /* Lighter Gruvbox green */
+  background-color: #b8bb26;
   transform: translateY(-2px);
 }
 
 .start-game-button:disabled {
-  background-color: #a89984; /* Gruvbox gray for disabled */
+  background-color: #a89984;
   cursor: not-allowed;
   opacity: 0.7;
 }
 
 .error-message {
-  color: #cc241d; /* Gruvbox red */
+  color: #cc241d;
   margin-top: 15px;
   font-weight: bold;
 }
@@ -89,5 +91,134 @@
 .waiting-message {
   margin-top: 20px;
   font-size: 1.1em;
-  color: #7c6f64; /* Gruvbox muted gray */
+  color: #7c6f64;
+}
+
+/* Floating shapes */
+
+.floating-shapes {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.shape {
+  position: absolute;
+  font-size: 2.8rem;
+  opacity: 0.1;
+  animation: floatShape 6s infinite ease-in-out;
+}
+
+.shape:nth-child(1) {
+  top: 10%;
+  left: 15%;
+  animation-delay: 0s;
+}
+.shape:nth-child(2) {
+  top: 60%;
+  left: 80%;
+  animation-delay: 1s;
+}
+.shape:nth-child(3) {
+  top: 35%;
+  left: 50%;
+  animation-delay: 2s;
+}
+.shape:nth-child(4) {
+  top: 80%;
+  left: 10%;
+  animation-delay: 3s;
+}
+
+/* Gun Target shapes styling */
+.svg-target {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  opacity: 0.1;
+  animation: floatShape 6s infinite ease-in-out;
+}
+
+.svg-target:nth-of-type(1) {
+  top: 20%;
+  left: 30%;
+  animation-delay: 0.5s;
+}
+
+.svg-target:nth-of-type(2) {
+  top: 70%;
+  left: 75%;
+  animation-delay: 1.5s;
+}
+
+/* Laser animations */
+
+.laser {
+  position: absolute;
+  top: 20%;
+  width: 120px;
+  height: 3px;
+  background: linear-gradient(to right, rgba(251, 73, 52, 0.35), rgba(254, 128, 25, 0.35));
+  box-shadow: 0 0 12px rgba(251, 73, 52, 0.25);
+  opacity: 0;
+  border-radius: 1.5px;
+  z-index: 0;
+}
+
+.laser-left-to-right {
+  left: -120px;
+  animation: laserLeftToRight 14s linear infinite;
+}
+
+.laser-right-to-left {
+  top: 40%;
+  right: -120px;
+  animation: laserRightToLeft 14s linear infinite;
+  animation-delay: 7s;
+}
+
+/* Animations */
+
+@keyframes floatShape {
+  0% { transform: translateY(0); opacity: 0.1; }
+  50% { transform: translateY(-12px); opacity: 0.2; }
+  100% { transform: translateY(0); opacity: 0.1; }
+}
+
+@keyframes laserLeftToRight {
+  0% {
+    opacity: 0;
+    left: -120px;
+  }
+  10% {
+    opacity: 0.4;
+  }
+  90% {
+    opacity: 0.4;
+    left: 100%;
+  }
+  100% {
+    opacity: 0;
+    left: 100%;
+  }
+}
+
+@keyframes laserRightToLeft {
+  0% {
+    opacity: 0;
+    right: -120px;
+  }
+  10% {
+    opacity: 0.4;
+  }
+  90% {
+    opacity: 0.4;
+    right: 100%;
+  }
+  100% {
+    opacity: 0;
+    right: 100%;
+  }
 }
