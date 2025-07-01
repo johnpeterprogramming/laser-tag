@@ -5,7 +5,8 @@ export default function SpectatorView() {
   const videoRef = useRef(null);
   const [error, setError] = useState(null);
 
-  // Example player data — replace with your real data or props
+
+  // Player details — example data
   const player = {
     name: "Player One",
     level: 5,
@@ -14,6 +15,8 @@ export default function SpectatorView() {
     status: "Alive",
   };
 
+
+  // Get camera stream
   useEffect(() => {
     let activeStream;
 
@@ -39,6 +42,18 @@ export default function SpectatorView() {
         activeStream.getTracks().forEach((track) => track.stop());
       }
     };
+  }, []);
+
+  // Fix for 100vh on mobile
+  useEffect(() => {
+    const setVH = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+    };
+
+    setVH();
+    window.addEventListener("resize", setVH);
+    return () => window.removeEventListener("resize", setVH);
   }, []);
 
   return (
