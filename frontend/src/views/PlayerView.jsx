@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
+import * as bodyPix from "@tensorflow-models/body-pix";
 import "@tensorflow/tfjs";
 import "./PlayerView.css";
 
@@ -7,11 +8,12 @@ export default function PlayerView() {
   const videoRef = useRef();
   const canvasRef = useRef();
   const [particles, setParticles] = useState([]);
-
+  const [bodyPixNet, setBodyPixNet] = useState(null);
   const predictionsRef = useRef([]);
 
   useEffect(() => {
     let model;
+    let bodyPixModel;
     let modelLoaded = false;
     let stream;
     let animationId;
@@ -55,14 +57,19 @@ export default function PlayerView() {
 
     const loadModel = async () => {
       model = await cocoSsd.load();
+      const bpNet = await bodyPix.load();
       modelLoaded = true;
+      setBodyPixNet(bpNet);
       detectFrame();
     };
 
     const detectFrame = async () => {
       if (videoRef.current && modelLoaded) {
         const predictions = await model.detect(videoRef.current);
-        canvas(predictions);
+        predictionsRef.current = predictions;
+        if (canvasRef.current) {
+          canvas(predictions);
+        }
       }
       animationId = requestAnimationFrame(detectFrame);
     };
@@ -90,8 +97,33 @@ export default function PlayerView() {
   }, []);
   const [recoil, setRecoil] = useState(false);
 
+  function getTargetPrediction(predictions) {
+    const cx = canvasRef.current.width / 2;
+    const cy = canvasRef.current.height / 2;
+    const results = [];
+    for (const pred of predictions) {
+      if (pred.class === "person" && pred.score > 0.5) {
+        const [x, y, w, h] = pred.bbox;
+        // Check if crosshair (cx, cy) is within bbox
+        if (cx >= x && cx <= x + w && cy >= y && cy <= y + h) {
+          results.push(pred);
+        }
+      }
+    }
+    return results
+  }
+
+  
+
   const handleShoot = () => {
     setRecoil(true);
+    const targets = getTargetPrediction(predictionsRef.current);
+    if (targets.length > 0) {
+      for (const target of targets) {
+        console.log("Hit target:", target);
+        // Here you can handle the hit logic, e.g., send a hit event to the server
+      }
+    }
     setTimeout(() => setRecoil(false), 100); // reset after 100ms
 
     const id = Date.now();
