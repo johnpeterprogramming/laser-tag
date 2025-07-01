@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import "@tensorflow/tfjs";
 import "./PlayerView.css";
@@ -6,6 +6,7 @@ import "./PlayerView.css";
 export default function PlayerView() {
   const videoRef = useRef();
   const canvasRef = useRef();
+  const [particles, setParticles] = useState([]);
 
   useEffect(() => {
     let model;
@@ -63,12 +64,17 @@ export default function PlayerView() {
   }, []);
 
   const handleShoot = () => {
-    console.log("Shoot!");
-    // ADD LOGIC HERE
+    const id = Date.now();
+    setParticles((prev) => [...prev, { id }]);
+
+    // Remove after 400ms
+    setTimeout(() => {
+      setParticles((prev) => prev.filter((p) => p.id !== id));
+    }, 400);
   };
 
   return (
-    <div className="player-wrapper">
+    <div className="player-wrapper" onClick={handleShoot}>
       <video
         ref={videoRef}
         autoPlay
@@ -83,9 +89,14 @@ export default function PlayerView() {
         height={480}
         className="player-canvas"
       />
-      <button className="shoot-button" onClick={handleShoot}>
-        Shoot
-      </button>
+
+      <div className="gun-overlay">
+        <img src="./gun.png" alt="Gun" className="gun-image" />
+      </div>
+
+      {particles.map((particle) => (
+        <div key={particle.id} className="shoot-particle" />
+      ))}
     </div>
   );
 }
