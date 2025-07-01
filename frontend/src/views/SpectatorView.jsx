@@ -5,6 +5,7 @@ export default function SpectatorView() {
   const videoRef = useRef(null);
   const [error, setError] = useState(null);
 
+
   // Player details — example data
   const player = {
     name: "Player One",
@@ -13,6 +14,7 @@ export default function SpectatorView() {
     score: 12345,
     status: "Alive",
   };
+
 
   // Get camera stream
   useEffect(() => {

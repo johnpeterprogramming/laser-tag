@@ -34,6 +34,7 @@ body {
   position: relative;
   width: 90vw;
   max-width: 48rem;
+
   aspect-ratio: 16 / 9;
   border-radius: 0.5rem;
   box-shadow: 0 10px 15px rgba(0, 0, 0, 0.7);
@@ -43,6 +44,7 @@ body {
 }
 
 /* Video itself */
+
 .camera-video {
   width: 100%;
   height: 100%;
@@ -63,6 +65,7 @@ body {
   box-shadow: 0 0 10px rgba(131, 165, 152, 0.7);
   user-select: none;
 }
+
 
 /* Health bar container */
 .health-bar-container {
@@ -93,6 +96,7 @@ body {
   transition: width 0.3s ease;
 }
 
+
 /* Player info text */
 .player-details {
   font-size: 0.9rem;
@@ -121,7 +125,6 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.8);
   text-align: center;
 }
-
 /* Mobile: Portrait layout override */
 @media (max-width: 768px) {
   .video-wrapper {
@@ -141,3 +144,4 @@ body {
     padding: 0.5rem 0.75rem;
   }
 }
+
