@@ -1,30 +1,43 @@
-import express from "express";
-
+import express, { Request, Response } from "express";
+import http from "http";
 import dotenv from "dotenv";
+import { Server, Socket } from "socket.io";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 dotenv.config();
 
 const port = process.env.PORT || 8080;
 
 const app = express();
-
-const http = require('http');
 const server = http.createServer(app);
-import { Server, Socket } from "socket.io";
 
 const io = new Server(server, {
   cors: {
-    origin: true, // Allow all origins in development
+    origin: true, // TODO: change to use environment variable for production
     methods: ["GET", "POST"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]
   }
 });
 
-// I think we can remove this. Will only make use of sockets for communication
-app.get("/api", (req, res) => {
-  res.json({ message: "TEST API IS WORKING!" });
+// Serve built React app from build directory
+const buildPath = path.join(__dirname, 'build');
+app.use(express.static(buildPath));
+
+// Handle React Router routes - send all non-API requests to React
+app.get(/^(?!\/api).*/, (_req: Request, res: Response) => {
+  res.sendFile(path.join(buildPath, 'index.html'));
 });
 
+// Simple test route for API
+app.get('/api/test', (_req: Request, res: Response) => {
+  res.json({ message: "Laser Tag Server is running!" });
+});
 
 // Socket logic : TODO: reduce duplication, same type is used for frontend
 type Player = { id: string, name: string, isHost: boolean, r?: number, g?: number, b?: number };
@@ -162,7 +175,7 @@ io.on('connection', (socket: Socket) => {
 });
 
 server.listen(port, () => {
-  console.log(`Server listening at http://0.0.0.0:${port}`);
+  console.log(`Server listening on port ${port}`);
 });
 
 
