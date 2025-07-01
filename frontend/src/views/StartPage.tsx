@@ -1,29 +1,83 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './StartPage.css';
+import './StartPage.css'; // Create this file for basic styling
+import socket from '../socket';
+import type { joinOrCreateLobbyResponse } from './types';
+
 
 function StartPage() {
+  const [isConnected, setIsConnected] = useState(socket.connected);
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [lobbyCode, setLobbyCode] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [username, setUsername] = useState<string>('');
+  const [lobbyCode, setLobbyCode] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
+  useEffect(() => {
+    function onConnect() {
+      setIsConnected(true);
+    }
+
+    function onDisconnect() {
+      setIsConnected(false);
+    }
+
+    function onLobbyCreate(lobbyResponse : joinOrCreateLobbyResponse ) {
+      if (!lobbyResponse.success) {
+        setErrorMessage(lobbyResponse.message);
+      } else {
+        navigate(`/lobby`, { state: { username, lobby: lobbyResponse?.lobby } });
+      }
+    }
+
+    function onLobbyJoin(lobbyResponse : joinOrCreateLobbyResponse ) {
+      if (!lobbyResponse.success) {
+        setErrorMessage(lobbyResponse.message);
+      } else {
+        navigate(`/lobby`, { state: { username, lobby: lobbyResponse?.lobby } });
+      }
+    }
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('createLobbyResponse', onLobbyCreate);
+    socket.on('joinLobbyResponse', onLobbyJoin);
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('createLobbyResponse', onLobbyCreate);
+      socket.off('joinLobbyResponse', onLobbyJoin);
+    };
+  }, [navigate, username, lobbyCode]);
 
   const handleJoinLobby = () => {
-    if (!username.trim() || !lobbyCode.trim()) {
+    if (!username || !lobbyCode) {
       setErrorMessage("Username and Lobby Code are required to join.");
       return;
     }
-    setErrorMessage('');
-    navigate(`/lobby/${lobbyCode.trim().toUpperCase()}`, { state: { username } });
+
+    if (isConnected) {
+      socket.emit('joinLobby', ({ playerName: username.trim(), lobbyCode: lobbyCode.trim() }));
+      // TODO: add indication of loading
+    } else {
+      setErrorMessage("Connection hasn't started.");
+      return;
+    }
   };
+
 
   const handleCreateLobby = () => {
     if (!username.trim()) {
       setErrorMessage("Username is required to create a lobby.");
       return;
     }
-    setErrorMessage('');
-    navigate(`/lobby/NEW_LOBBY_ID`, { state: { username } });
+
+    if (isConnected) {
+      socket.emit('createLobby', { playerName: username.trim(), lobbyCode: lobbyCode.trim() });
+      // TODO: add indication of loading
+    } else {
+      setErrorMessage("Connection hasn't started.");
+    }
   };
 
   useEffect(() => {
@@ -65,6 +119,8 @@ function StartPage() {
         <div className="laser right-to-left"></div>
       </div>
 
+      {/* End test */}
+
       {/* Main Content Box */}
       <div className="start-box">
         <h1 className="glow-text">Laser Tag Treasure Hunt</h1>
@@ -100,8 +156,9 @@ function StartPage() {
           <button className="glow-btn" onClick={handleCreateLobby}>Create New Lobby</button>
         </div>
 
-        <p className="note">Press Enter to join. 4–20 players.</p>
+        <p className="note">Press Enter to join. 4-20 players.</p>
       </div>
+
     </div>
   );
 }
