@@ -119,6 +119,16 @@ function LobbyPage() {
 
     const handleStartGame = () => {
         if (lobbyState?.code) {
+            // Check if all players have shirt colors detected
+            const allPlayersHaveColors = lobbyState.players.every(player => 
+                player.r !== undefined && player.g !== undefined && player.b !== undefined
+            );
+
+            if (!allPlayersHaveColors) {
+                setErrorMessage("All players must take a selfie to detect their shirt color before starting the game.");
+                return;
+            }
+
             socket.emit('startGame', { lobbyCode: lobbyState.code });
 
             // Only handle error responses for the host
@@ -394,6 +404,11 @@ function LobbyPage() {
                                         {player.name} {player.name === username && '(You)'}
                                         {player.isSpectator && ' 🥽 '}
                                         {player.isHost && ' (Host)'}
+                                        {/* Color detection indicator */}
+                                        {player.r !== undefined && player.g !== undefined && player.b !== undefined 
+                                            ? ' ✅' 
+                                            : ' ⏳'
+                                        }
                                     </span>
                                     <div className="player-health">
                                         <span className="health-text">{player.health}/{player.maxHealth} HP</span>
@@ -403,6 +418,21 @@ function LobbyPage() {
                                                 style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
                                             ></div>
                                         </div>
+                                        {/* Show player's detected color if available */}
+                                        {player.r !== undefined && player.g !== undefined && player.b !== undefined && (
+                                            <div 
+                                                className="player-color-circle"
+                                                style={{ 
+                                                    backgroundColor: `rgb(${player.r}, ${player.g}, ${player.b})`,
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    borderRadius: '50%',
+                                                    marginLeft: '10px',
+                                                    border: '2px solid white'
+                                                }}
+                                                title={`Detected color: RGB(${player.r}, ${player.g}, ${player.b})`}
+                                            ></div>
+                                        )}
                                     </div>
                                 </div>
                             </li>
@@ -415,9 +445,21 @@ function LobbyPage() {
                 <button
                     onClick={handleStartGame}
                     className="start-game-button"
-                    disabled={lobbyState.players.length < 2} // Disable if not enough players
+                    disabled={
+                        lobbyState.players.length < 2 || 
+                        !lobbyState.players.every(player => 
+                            player.r !== undefined && player.g !== undefined && player.b !== undefined
+                        )
+                    }
                 >
-                    {lobbyState.players.length < 2 ? `Need ${2 - lobbyState.players.length} more players` : 'Start Game'}
+                    {lobbyState.players.length < 2 
+                        ? `Need ${2 - lobbyState.players.length} more players`
+                        : !lobbyState.players.every(player => 
+                            player.r !== undefined && player.g !== undefined && player.b !== undefined
+                        )
+                        ? "Waiting for all players to detect shirt colors"
+                        : 'Start Game'
+                    }
                 </button>
             )}
             {!(playerState?.isHost ?? false) && ( // This part won't show with isLobbyCreator true, but kept for future
