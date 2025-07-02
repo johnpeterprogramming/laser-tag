@@ -545,7 +545,7 @@ export default function PlayerView() {
         
         // Maximum allowed color distance for a valid match
         // Lower values = more strict matching, higher values = more lenient
-        const MAX_COLOR_DISTANCE = 80; // Adjust this value based on testing
+        const MAX_COLOR_DISTANCE = 100; // Adjust this value based on testing
 
         const otherPlayers = currentLobby.players;
         // Filter out the current player (can't shoot yourself)

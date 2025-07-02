@@ -9,6 +9,10 @@ interface Player {
     health: number;
     maxHealth?: number;
     colour?: string;
+    isSpectator?: boolean;
+    r?: number;
+    g?: number;
+    b?: number;
 }
 
 interface Lobby {
@@ -60,7 +64,9 @@ export default function SpectatorView() {
             </header>
             <main className="dashboard-main-grid">
                 {currentLobby?.players && currentLobby.players.length > 0 ? (
-                    currentLobby.players.map((p: any) => {
+                    currentLobby.players
+                        .filter((p: any) => !p.isSpectator) // Filter out spectators
+                        .map((p: any) => {
                         // Use RGB color for avatar border and color dot
                         const rgb = (typeof p.r === 'number' && typeof p.g === 'number' && typeof p.b === 'number')
                             ? `rgb(${p.r},${p.g},${p.b})`
@@ -117,7 +123,11 @@ export default function SpectatorView() {
                         );
                     })
                 ) : (
-                    <div style={{ color: '#b57614', fontWeight: 500, textAlign: 'center', gridColumn: '1/-1' }}>No players in lobby</div>
+                    <div style={{ color: '#b57614', fontWeight: 500, textAlign: 'center', gridColumn: '1/-1' }}>
+                        {currentLobby?.players && currentLobby.players.length > 0 
+                            ? "No active players (only spectators in lobby)" 
+                            : "No players in lobby"}
+                    </div>
                 )}
             </main>
         </div>
