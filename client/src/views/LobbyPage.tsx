@@ -26,11 +26,22 @@ function LobbyPage() {
     const [cocoModel, setCocoModel] = useState<cocoSsd.ObjectDetection | null>(null);
     const selfieNotTaken = useRef(true); // Track if selfie has NOT been taken
 
+    function stopCameraStream() {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+            tracks.forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+
     // Handle lobby updates
     useEffect(() => {
         initializeCamera();
         loadModels();
-        
+
         if (lobby && username) {
             socket.on("lobbyUpdated", (lobby: Lobby) => {
                 setLobbyState(lobby);
@@ -42,6 +53,8 @@ function LobbyPage() {
             // Listen for game start - ALL players should navigate when game starts
             socket.on('gameStarted', (updatedLobby) => {
                 console.log('Game started! Navigating to player view...', { username, lobbyCode: updatedLobby.code });
+
+                stopCameraStream();
                 // Navigate to player view when game starts
                 navigate('/player', {
                     state: {
@@ -76,24 +89,24 @@ function LobbyPage() {
     };
 
     const initializeCamera = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-        //   facingMode: 'environment', // Use back camera for better photos
-        //   width: { ideal: 1280 },
-        //   height: { ideal: 720 }
+        try {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                      facingMode: 'environment', // Use back camera for better photos
+                    //   width: { ideal: 1280 },
+                    //   height: { ideal: 720 }
+                }
+            });
+            setStream(mediaStream);
+            if (videoRef.current) {
+                videoRef.current.srcObject = mediaStream;
+                console.log(mediaStream);
+            }
+        } catch (error) {
+            console.error('Failed to access camera:', error);
+            alert('Camera access is required to detect your shirt color. Please allow camera permissions.');
         }
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        console.log(mediaStream);
-      }
-    } catch (error) {
-      console.error('Failed to access camera:', error);
-      alert('Camera access is required to detect your shirt color. Please allow camera permissions.');
-    }
-  };
+    };
 
     const handleStartGame = () => {
         if (lobbyState?.code) {
@@ -160,24 +173,24 @@ function LobbyPage() {
         // 2 = left_face, 3 = right_face, 4 = left_upper_arm_front, 5 = left_upper_arm_back
         // We'll focus on torso and upper body parts for shirt color
         const targetBodyParts = [12, 13, 2, 3, 4, 5]; // torso_front, torso_back, faces, upper arms
-        
+
         let shirtPixels = [];
 
         // Extract pixels that belong to the torso (shirt area)
         for (let i = 0; i < partMap.length; i++) {
             const bodyPart = partMap[i];
-            
+
             if (targetBodyParts.includes(bodyPart)) {
                 const pixelIndex = i * 4;
                 const r = pixels[pixelIndex];
                 const g = pixels[pixelIndex + 1];
                 const b = pixels[pixelIndex + 2];
-                
+
                 // Quantize colors to reduce noise (group similar colors together)
                 const quantizedR = Math.round(r / 16) * 16;
                 const quantizedG = Math.round(g / 16) * 16;
                 const quantizedB = Math.round(b / 16) * 16;
-                
+
                 shirtPixels.push({ r: quantizedR, g: quantizedG, b: quantizedB });
             }
         }
@@ -189,7 +202,7 @@ function LobbyPage() {
         if (shirtPixels.length > 0) {
             // Find mode (most frequent) color
             const colorCounts = new Map();
-            
+
             shirtPixels.forEach(pixel => {
                 const colorKey = `${pixel.r},${pixel.g},${pixel.b}`;
                 colorCounts.set(colorKey, (colorCounts.get(colorKey) || 0) + 1);
@@ -198,7 +211,7 @@ function LobbyPage() {
             // Find the most frequent color
             let maxCount = 0;
             let modeColor = null;
-            
+
             for (const [colorKey, count] of colorCounts.entries()) {
                 if (count > maxCount) {
                     maxCount = count;
@@ -220,7 +233,7 @@ function LobbyPage() {
             const centerY = canvas.height / 2;
             const fallbackImageData = ctx.getImageData(centerX - 50, centerY - 50, 100, 100);
             const fallbackPixels = fallbackImageData.data;
-            
+
             const fallbackColors = [];
             for (let i = 0; i < fallbackPixels.length; i += 4) {
                 const r = Math.round(fallbackPixels[i] / 16) * 16;
@@ -238,7 +251,7 @@ function LobbyPage() {
 
             let maxCount = 0;
             let modeColor = null;
-            
+
             for (const [colorKey, count] of colorCounts.entries()) {
                 if (count > maxCount) {
                     maxCount = count;
@@ -281,29 +294,29 @@ function LobbyPage() {
 
         <div className="lobby-page-container">
             {/* Video stream and canvas for object detection */}
-            {lobbyState && selfieNotTaken.current&& (
+            {lobbyState && selfieNotTaken.current && (
                 <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="player-video"
-                style={{
-                    background: '#000',
-                    display: 'block' // Ensure video is visible
-                }}
-            />)}
-            {lobbyState && selfieNotTaken.current&& (<canvas
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="player-video"
+                    style={{
+                        background: '#000',
+                        display: 'block' // Ensure video is visible
+                    }}
+                />)}
+            {lobbyState && selfieNotTaken.current && (<canvas
                 ref={canvasRef}
                 className="player-canvas"
             />)}
             {/* Bottom button positioned over video */}
-            {lobbyState && selfieNotTaken.current&& (
+            {lobbyState && selfieNotTaken.current && (
                 <button
                     className="bottom-button"
                     onClick={handleTakeSelfie}
                 >
-                    Take a selfie to detect your shirt color
+                    Have someone take a closeup picture of your shirt.
                 </button>
             )}
 

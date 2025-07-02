@@ -429,7 +429,7 @@ const gracefulShutdown = (signal: string) => {
             "Could not close connections in time, forcefully shutting down",
         );
         process.exit(1);
-    }, 10000);
+    }, 10);
 };
 
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));

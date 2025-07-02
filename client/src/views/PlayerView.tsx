@@ -4,7 +4,7 @@ import * as bodyPix from "@tensorflow-models/body-pix";
 import "@tensorflow/tfjs";
 import "./PlayerView.css";
 import { socket } from "../socket";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface LocationState {
     username: string;
@@ -46,9 +46,11 @@ export default function PlayerView() {
     const [isDead, setIsDead] = useState<boolean>(false); // Track death state
 
     const location = useLocation();
+    const navigate = useNavigate();
     const { username, lobby } = (location.state as LocationState) || {};
     const lobbyCode = lobby?.code || "";
     const [currentLobby, setCurrentLobby] = useState<Lobby | undefined>(lobby);
+
 
     // Debug logging
     // console.log('PlayerView render:', { username, lobby, lobbyCode, currentLobby });
@@ -56,7 +58,7 @@ export default function PlayerView() {
     // Check if we're on mobile and require user interaction for camera
     useEffect(() => {
         const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
+
         if (isMobile) {
             console.log("📱 Mobile device detected, waiting for user interaction");
             // Don't auto-start camera on mobile - wait for user tap
@@ -74,16 +76,11 @@ export default function PlayerView() {
         }
     };
 
-    // Automatically start camera initialization when component mounts (desktop only)
-    useEffect(() => {
-        // This is now handled in the mobile detection useEffect above
-    }, []);
-
     // Camera initialization function (automatically called on mount)
     const initCamera = async () => {
         if (cameraRequested && !cameraLoading) return; // Prevent multiple requests
 
-        console.log("🎯 Starting automatic camera initialization");
+        console.log("🎯 Starting automatic camra initialization");
         setCameraRequested(true);
         setCameraLoading(true);
 
@@ -232,7 +229,7 @@ export default function PlayerView() {
             console.log("🎥 Requesting camera access...");
             console.log("📱 User agent:", navigator.userAgent);
             console.log("📱 Is Android:", /Android/i.test(navigator.userAgent));
-            
+
             // Check if we're on Android
             const isAndroid = /Android/i.test(navigator.userAgent);
             if (isAndroid) {
@@ -243,12 +240,12 @@ export default function PlayerView() {
                 // Start with more basic configs for Android compatibility
                 {
                     video: {
-                        facingMode: { exact: "environment" },
+                        facingMode: "environment",
                     },
                 },
                 {
                     video: {
-                        facingMode: "environment",
+                        facingMode: { exact: "environment" },
                     },
                 },
                 {
@@ -261,8 +258,8 @@ export default function PlayerView() {
                 {
                     video: {
                         facingMode: "environment",
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
+                        width: { ideal: 480 },
+                        height: { ideal: 640 },
                     },
                 },
                 {
@@ -286,6 +283,13 @@ export default function PlayerView() {
             ];
             let streamResult: MediaStream | null = null;
 
+
+            if (videoRef.current && videoRef.current.srcObject) {
+                console.log("there were ongoing media tracks. Closing!");
+                const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+                tracks.forEach(track => track.stop());
+                videoRef.current.srcObject = null;
+            }
 
             let lastError: Error | null = null;
             for (const config of cameraConfigs) {
@@ -316,11 +320,11 @@ export default function PlayerView() {
                 videoRef.current.muted = true;
                 videoRef.current.playsInline = true;
                 videoRef.current.autoplay = true;
-                
+
                 // Android-specific attributes
                 videoRef.current.setAttribute('webkit-playsinline', 'true');
                 videoRef.current.setAttribute('playsinline', 'true');
-                
+
                 // Disable controls on mobile
                 videoRef.current.controls = false;
                 videoRef.current.disablePictureInPicture = true;
@@ -466,7 +470,7 @@ export default function PlayerView() {
                                     console.log("❌ Retry 1 video play failed:", e),
                                 );
                         }, 500);
-                        
+
                         setTimeout(() => {
                             videoRef.current
                                 ?.play()
@@ -494,10 +498,7 @@ export default function PlayerView() {
     };
     // Join socket room and initialize player data
     useEffect(() => {
-        if (lobbyCode && username) {
-            // Join the lobby room to receive updates
-            socket.emit("joinRoom", { lobbyCode });
-
+        if (lobby && username) {
             // Initialize health from lobby data if available
             if (currentLobby) {
                 const currentPlayer = currentLobby.players.find(
@@ -507,8 +508,10 @@ export default function PlayerView() {
                     setHealth(currentPlayer.health);
                 }
             }
+        } else {
+            navigate('/', { replace: true }) // remove history when using back button
         }
-    }, [lobbyCode, username, currentLobby]);
+    }, [lobby, username, currentLobby]);
 
     // Socket listeners for health events
     useEffect(() => {
@@ -851,8 +854,8 @@ export default function PlayerView() {
 
     // Main game interface
     return (
-        <div 
-            className="player-wrapper" 
+        <div
+            className="player-wrapper"
             onClick={cameraRequested ? handleShoot : handleUserInteraction}
         >
             {/* Health Bar */}
@@ -936,7 +939,7 @@ export default function PlayerView() {
                     </div>
                 </div>
             )}
-            
+
             {(cameraLoading || error) && !videoRef.current?.srcObject && (
                 <div
                     style={{
