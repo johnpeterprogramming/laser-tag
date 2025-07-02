@@ -36,11 +36,13 @@ export default function PlayerView() {
     const [particles, setParticles] = useState<Particle[]>([]);
     const [bodyPixNet, setBodyPixNet] = useState<bodyPix.BodyPix | null>(null);
     const predictionsRef = useRef<cocoSsd.DetectedObject[]>([]);
+    const [cocoModel, setCocoModel] = useState<cocoSsd.ObjectDetection | null>(null);
 
     const [health, setHealth] = useState<number>(100);
     const [maxHealth] = useState<number>(100);
-    const [cameraRequested, setCameraRequested] = useState<boolean>(true); // Start with camera requested
-    const [cameraLoading, setCameraLoading] = useState<boolean>(true); // Start with camera loading
+    const [cameraRequested, setCameraRequested] = useState<boolean>(false);
+    const [cameraLoading, setCameraLoading] = useState<boolean>(false);
+    const [modelsLoaded, setModelsLoaded] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [recoil, setRecoil] = useState<boolean>(false);
     const [isDead, setIsDead] = useState<boolean>(false); // Track death state
@@ -50,26 +52,47 @@ export default function PlayerView() {
     const lobbyCode = lobby?.code || "";
     const [currentLobby, setCurrentLobby] = useState<Lobby | undefined>(lobby);
 
-    // Debug logging
-    // console.log('PlayerView render:', { username, lobby, lobbyCode, currentLobby });
-
-    // Automatically start camera initialization when component mounts
+    // Load models before camera initialization
     useEffect(() => {
-        initCamera();
+        const loadModels = async () => {
+            try {
+                console.log("🤖 Loading AI models...");
+                
+                const [cocoModelResult, bodyPixModelResult] = await Promise.all([
+                    cocoSsd.load(),
+                    bodyPix.load()
+                ]);
+
+                setCocoModel(cocoModelResult);
+                setBodyPixNet(bodyPixModelResult);
+                setModelsLoaded(true);
+                
+                console.log("✅ AI models loaded successfully");
+            } catch (error) {
+                console.error("❌ Error loading AI models:", error);
+                setModelsLoaded(false);
+            }
+        };
+
+        loadModels();
     }, []);
 
-    // Camera initialization function (automatically called on mount)
-    const initCamera = async () => {
-        if (cameraRequested && !cameraLoading) return; // Prevent multiple requests
+    // Initialize camera after models are loaded
+    useEffect(() => {
+        if (modelsLoaded) {
+            initCamera();
+        }
+    }, [modelsLoaded]);
 
-        console.log("🎯 Starting automatic camera initialization");
+    // Camera initialization function (called after models are loaded)
+    const initCamera = async () => {
+        if (cameraRequested || !modelsLoaded || !cocoModel || !bodyPixNet) return; // Prevent multiple requests and ensure models are loaded
+
+        console.log("🎯 Starting camera initialization with pre-loaded models");
         setCameraRequested(true);
         setCameraLoading(true);
 
-        let model: cocoSsd.ObjectDetection;
-        let modelLoaded = false;
         let stream: MediaStream;
-        // let animationId: number;
         let cameraTimeout: NodeJS.Timeout;
 
         // Set a timeout to clear camera loading state if camera/model fails
@@ -140,31 +163,10 @@ export default function PlayerView() {
             });
         };
 
-        const loadModel = async () => {
-            try {
-                console.log("Loading TensorFlow model...");
-                model = await cocoSsd.load();
-
-                const bpNet = await bodyPix.load();
-                modelLoaded = true;
-                setBodyPixNet(bpNet);
-
-                console.log("TensorFlow model loaded successfully");
-                // Start detection loop only if video is ready
-                if (videoRef.current && videoRef.current.readyState >= 2) {
-                    detectFrame();
-                }
-            } catch (error) {
-                console.error("Error loading TensorFlow model:", error);
-                // Continue without model detection
-                modelLoaded = false;
-            }
-        };
-
         const detectFrame = async () => {
-            if (videoRef.current && modelLoaded && videoRef.current.readyState >= 2) {
+            if (videoRef.current && cocoModel && videoRef.current.readyState >= 2) {
                 try {
-                    const predictions = await model.detect(videoRef.current);
+                    const predictions = await cocoModel.detect(videoRef.current);
                     predictionsRef.current = predictions;
 
                     // Could be unnecessary, but fine for now
@@ -201,7 +203,11 @@ export default function PlayerView() {
                 );
                 clearTimeout(cameraTimeout);
                 setCameraLoading(false);
-                loadModel();
+                
+                // Start detection loop since models are already loaded
+                if (videoRef.current && videoRef.current.readyState >= 2) {
+                    detectFrame();
+                }
                 return true;
             }
             return false;
@@ -871,7 +877,7 @@ export default function PlayerView() {
             ))}
 
             {/* Camera status indicator - show loading or error states */}
-            {(cameraLoading || error) && !videoRef.current?.srcObject && (
+            {((!modelsLoaded || cameraLoading) || error) && !videoRef.current?.srcObject && (
                 <div
                     style={{
                         position: "absolute",
@@ -903,6 +909,13 @@ export default function PlayerView() {
                             >
                                 Try Again
                             </button>
+                        </>
+                    ) : !modelsLoaded ? (
+                        <>
+                            <div>🤖 Loading AI Models...</div>
+                            <div style={{ fontSize: "0.8rem", marginTop: "10px" }}>
+                                Setting up object detection and color recognition
+                            </div>
                         </>
                     ) : (
                         <>
