@@ -77,9 +77,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 20px 15px;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .start-page-container::before {
@@ -115,6 +116,7 @@
   z-index: 2;
   backdrop-filter: blur(20px);
   border: 2px solid rgba(0, 255, 255, 0.3);
+  box-sizing: border-box;
 }
 
 .start-box::before {
@@ -166,6 +168,7 @@
 
 .input-group input {
   width: 100%;
+  max-width: 100%;
   padding: 18px 22px;
   border: 2px solid rgba(0, 255, 255, 0.4);
   border-radius: 15px;
@@ -180,6 +183,7 @@
   box-shadow: 
     inset 0 2px 8px rgba(0, 0, 0, 0.3),
     0 0 20px rgba(0, 255, 255, 0.1);
+  box-sizing: border-box;
 }
 
 .input-group input:focus {
@@ -196,19 +200,20 @@
 }
 
 .input-group input::placeholder {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.5);
   font-style: italic;
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
 }
 
 .button-group {
   display: flex;
   gap: 20px;
   margin-top: 40px;
+  width: 100%;
 }
 
 .button-group button {
   flex: 1;
+  min-width: 0;
   padding: 20px 25px;
   border: none;
   border-radius: 15px;
@@ -228,6 +233,9 @@
   box-shadow: 
     0 0 20px rgba(0, 255, 255, 0.4),
     inset 0 0 20px rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .button-group button::before {
@@ -284,20 +292,17 @@
 .note {
   margin-top: 40px;
   font-size: 1.1em;
-  color: #ffffff;
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
   font-family: 'Exo 2', sans-serif;
   padding: 16px 24px;
   background: linear-gradient(145deg, 
-    rgba(255, 255, 255, 0.08), 
-    rgba(0, 255, 255, 0.08));
+    rgba(255, 255, 255, 0.05), 
+    rgba(0, 255, 255, 0.05));
   border-radius: 12px;
-  border: 1px solid rgba(0, 255, 255, 0.4);
+  border: 1px solid rgba(0, 255, 255, 0.2);
   text-align: center;
-  box-shadow: 
-    0 0 20px rgba(0, 255, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
 }
 
 /* 🎮 Floating Controller Shapes 🎮 */
@@ -470,16 +475,48 @@
   }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 768px) {
+  .start-page-container {
+    padding: 15px 10px;
+  }
+
   .start-box {
-    padding: 40px 30px;
-    max-width: 380px;
+    padding: 30px 20px;
+    max-width: 90vw;
+    width: 100%;
   }
 
   .start-box h1 {
-    font-size: 2.2em;
-    margin-bottom: 35px;
-    letter-spacing: 3px;
+    font-size: 2.4em;
+    margin-bottom: 30px;
+    letter-spacing: 2px;
+  }
+
+  .button-group {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 30px;
+  }
+
+  .button-group button {
+    font-size: 1.1em;
+    padding: 16px 20px;
+    letter-spacing: 1px;
+  }
+
+  .input-group input {
+    font-size: 1.1em;
+    padding: 16px 18px;
+  }
+
+  .radio-option {
+    font-size: 0.95em;
+    padding: 10px 12px;
+    letter-spacing: 1px;
+  }
+
+  .input-group > div {
+    gap: 12px;
   }
 
   .shape {
@@ -487,35 +524,123 @@
   }
 
   .svg-target {
-    width: 70px;
-    height: 70px;
+    width: 80px;
+    height: 80px;
+  }
+
+  .laser {
+    width: 140px;
+    height: 4px;
+  }
+}
+
+@media (max-width: 500px) {
+  .start-page-container {
+    padding: 10px 8px;
+  }
+
+  .start-box {
+    padding: 25px 18px;
+    max-width: 95vw;
+  }
+
+  .start-box h1 {
+    font-size: 2em;
+    margin-bottom: 25px;
+    letter-spacing: 1.5px;
   }
 
   .button-group {
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
+    margin-top: 25px;
   }
 
   .button-group button {
-    font-size: 1.1em;
-    padding: 18px 20px;
-    letter-spacing: 1px;
+    font-size: 1em;
+    padding: 14px 16px;
+    letter-spacing: 0.5px;
   }
 
   .input-group input {
-    font-size: 1.1em;
-    padding: 16px 20px;
+    font-size: 1em;
+    padding: 14px 16px;
+  }
+
+  .input-group label {
+    font-size: 1em;
   }
 
   .radio-option {
-    font-size: 1em;
-    padding: 10px 14px;
-    letter-spacing: 1px;
+    font-size: 0.9em;
+    padding: 8px 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .input-group > div {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .shape {
+    font-size: 2.5rem;
+  }
+
+  .svg-target {
+    width: 60px;
+    height: 60px;
   }
 
   .laser {
-    width: 120px;
-    height: 4px;
+    width: 100px;
+    height: 3px;
+  }
+
+  .note {
+    font-size: 1em;
+    padding: 12px 16px;
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 350px) {
+  .start-page-container {
+    padding: 8px 5px;
+  }
+
+  .start-box {
+    padding: 20px 15px;
+    max-width: 98vw;
+  }
+
+  .start-box h1 {
+    font-size: 1.8em;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
+
+  .button-group button {
+    font-size: 0.95em;
+    padding: 12px 14px;
+  }
+
+  .input-group input {
+    font-size: 0.95em;
+    padding: 12px 14px;
+  }
+
+  .radio-option {
+    font-size: 0.85em;
+    padding: 6px 8px;
+  }
+
+  .shape {
+    font-size: 2rem;
+  }
+
+  .svg-target {
+    width: 50px;
+    height: 50px;
   }
 }
 
@@ -524,12 +649,15 @@
   display: flex;
   gap: 15px;
   justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .radio-option {
   position: relative;
   cursor: pointer;
   flex: 1;
+  min-width: 0;
   padding: 12px 16px;
   border: 2px solid rgba(0, 255, 255, 0.4);
   border-radius: 15px;
@@ -551,6 +679,10 @@
     inset 0 0 20px rgba(255, 255, 255, 0.1);
   text-transform: uppercase;
   letter-spacing: 2px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .radio-option input[type="radio"] {

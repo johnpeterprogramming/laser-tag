@@ -351,10 +351,9 @@
 }
 .lobby-state {
   font-size: 1.2em;
-  color: #ffffff;
+  color: #b57614;
   margin-top: 8px;
-  font-weight: 700;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  font-weight: 600;
 }
 
 .lobby-state span {
@@ -473,12 +472,11 @@
   margin: 8px 0;
 }
 .player-colour-label, .player-health-label {
-  color: #ffffff;
+  color: #b57614;
   font-size: 1.1em;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
 }
 .player-colour-dot {
   display: inline-block;
