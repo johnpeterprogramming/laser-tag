@@ -6,6 +6,17 @@
     height: 100%;
     overflow: hidden;
     background: #000;
+    
+    /* Android optimizations */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    
+    /* Prevent viewport issues on Android */
+    width: 100vw;
+    height: 100vh;
     /* display: flex;
     flex-direction: column;
     align-items: center;
@@ -25,6 +36,12 @@
     object-position: center center;
     z-index: 1;
     user-select: none;
+    
+    /* Android-specific fixes */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .player-canvas {

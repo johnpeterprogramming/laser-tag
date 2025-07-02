@@ -39,8 +39,8 @@ export default function PlayerView() {
 
     const [health, setHealth] = useState<number>(100);
     const [maxHealth] = useState<number>(100);
-    const [cameraRequested, setCameraRequested] = useState<boolean>(true); // Start with camera requested
-    const [cameraLoading, setCameraLoading] = useState<boolean>(true); // Start with camera loading
+    const [cameraRequested, setCameraRequested] = useState<boolean>(false); // Don't auto-start on mobile
+    const [cameraLoading, setCameraLoading] = useState<boolean>(false); // Don't start loading immediately
     const [error, setError] = useState<string | null>(null);
     const [recoil, setRecoil] = useState<boolean>(false);
     const [isDead, setIsDead] = useState<boolean>(false); // Track death state
@@ -53,9 +53,30 @@ export default function PlayerView() {
     // Debug logging
     // console.log('PlayerView render:', { username, lobby, lobbyCode, currentLobby });
 
-    // Automatically start camera initialization when component mounts
+    // Check if we're on mobile and require user interaction for camera
     useEffect(() => {
-        initCamera();
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+            console.log("📱 Mobile device detected, waiting for user interaction");
+            // Don't auto-start camera on mobile - wait for user tap
+        } else {
+            console.log("💻 Desktop detected, auto-starting camera");
+            initCamera();
+        }
+    }, []);
+
+    // Handle user interaction to start camera on mobile
+    const handleUserInteraction = () => {
+        if (!cameraRequested && !cameraLoading) {
+            console.log("👆 User interaction detected, starting camera");
+            initCamera();
+        }
+    };
+
+    // Automatically start camera initialization when component mounts (desktop only)
+    useEffect(() => {
+        // This is now handled in the mobile detection useEffect above
     }, []);
 
     // Camera initialization function (automatically called on mount)
@@ -209,20 +230,32 @@ export default function PlayerView() {
 
         try {
             console.log("🎥 Requesting camera access...");
+            console.log("📱 User agent:", navigator.userAgent);
+            console.log("📱 Is Android:", /Android/i.test(navigator.userAgent));
+            
+            // Check if we're on Android
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            if (isAndroid) {
+                console.log("📱 Detected Android device, using Android-optimized settings");
+            }
 
             const cameraConfigs = [
+                // Start with more basic configs for Android compatibility
                 {
                     video: {
-                        facingMode: "environment",
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
+                        facingMode: { exact: "environment" },
                     },
                 },
                 {
                     video: {
                         facingMode: "environment",
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
+                    },
+                },
+                {
+                    video: {
+                        facingMode: { exact: "environment" },
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
                     },
                 },
                 {
@@ -234,8 +267,21 @@ export default function PlayerView() {
                 },
                 {
                     video: {
+                        facingMode: { exact: "environment" },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                    },
+                },
+                {
+                    video: {
                         facingMode: "environment",
-                    }
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                    },
+                },
+                // Fallback to any camera if environment camera fails
+                {
+                    video: true,
                 },
             ];
             let streamResult: MediaStream | null = null;
@@ -266,10 +312,18 @@ export default function PlayerView() {
                 console.log("🎬 Assigning stream to video element...");
                 videoRef.current.srcObject = stream;
 
-                // Force video properties immediately
+                // More aggressive settings for Android
                 videoRef.current.muted = true;
                 videoRef.current.playsInline = true;
                 videoRef.current.autoplay = true;
+                
+                // Android-specific attributes
+                videoRef.current.setAttribute('webkit-playsinline', 'true');
+                videoRef.current.setAttribute('playsinline', 'true');
+                
+                // Disable controls on mobile
+                videoRef.current.controls = false;
+                videoRef.current.disablePictureInPicture = true;
 
                 // Log stream assignment
                 console.log("✅ Stream assigned to video element:", {
@@ -380,24 +434,46 @@ export default function PlayerView() {
                     console.log("✅ Video setup successful immediately");
                 }
 
-                // Try to play the video with more aggressive approach
+                // Try to play the video with more aggressive approach for Android
                 const playVideo = async () => {
                     try {
                         console.log("🎬 Attempting to play video...");
                         if (videoRef.current) {
-                            await videoRef.current.play();
-                            console.log("✅ Video playing successfully");
+                            // On Android, we need to ensure the video is ready
+                            if (videoRef.current.readyState >= 2) {
+                                await videoRef.current.play();
+                                console.log("✅ Video playing successfully");
+                            } else {
+                                console.log("🔄 Video not ready, waiting...");
+                                // Wait for readyState to change
+                                videoRef.current.addEventListener('canplay', async () => {
+                                    try {
+                                        await videoRef.current!.play();
+                                        console.log("✅ Video playing after canplay event");
+                                    } catch (e) {
+                                        console.log("❌ Video play failed after canplay:", e);
+                                    }
+                                }, { once: true });
+                            }
                         }
                     } catch (playError) {
                         console.log("⚠️ Video play failed, retrying...", playError);
-                        // Retry after a short delay
+                        // For Android, try multiple times with delays
+                        setTimeout(() => {
+                            videoRef.current
+                                ?.play()
+                                .catch((e) =>
+                                    console.log("❌ Retry 1 video play failed:", e),
+                                );
+                        }, 500);
+                        
                         setTimeout(() => {
                             videoRef.current
                                 ?.play()
                                 .catch((e) =>
                                     console.log("❌ Final video play attempt failed:", e),
                                 );
-                        }, 500);
+                        }, 1000);
                     }
                 };
 
@@ -775,7 +851,10 @@ export default function PlayerView() {
 
     // Main game interface
     return (
-        <div className="player-wrapper" onClick={handleShoot}>
+        <div 
+            className="player-wrapper" 
+            onClick={cameraRequested ? handleShoot : handleUserInteraction}
+        >
             {/* Health Bar */}
             <div className="player-health-overlay">
                 <div className="health-bar-container">
@@ -833,6 +912,31 @@ export default function PlayerView() {
             ))}
 
             {/* Camera status indicator - show loading or error states */}
+            {!cameraRequested && !error && (
+                <div
+                    style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        color: "white",
+                        textAlign: "center",
+                        zIndex: 5,
+                        background: "rgba(0,0,0,0.8)",
+                        padding: "20px",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                    }}
+                    onClick={handleUserInteraction}
+                >
+                    <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📱</div>
+                    <div style={{ fontSize: "1.2rem", marginBottom: "0.5rem" }}>Tap to Start Camera</div>
+                    <div style={{ fontSize: "0.9rem", opacity: 0.8 }}>
+                        Camera access required for AR targeting
+                    </div>
+                </div>
+            )}
+            
             {(cameraLoading || error) && !videoRef.current?.srcObject && (
                 <div
                     style={{
