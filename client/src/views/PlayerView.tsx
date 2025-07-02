@@ -53,6 +53,7 @@ export default function PlayerView() {
     // console.log('PlayerView render:', { username, lobby, lobbyCode, currentLobby });
 
     // Add debug state for camera status
+    // @ts-ignore
     const [cameraDebug, setCameraDebug] = useState<{
         hasStream: boolean;
         hasVideoElement: boolean;
@@ -791,6 +792,7 @@ export default function PlayerView() {
         }, 400);
     };
 
+    // @ts-ignore
     const handleHeal = () => {
         if (lobbyCode) {
             socket.emit("healPlayer", {

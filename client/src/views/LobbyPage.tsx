@@ -19,8 +19,10 @@ function LobbyPage() {
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    // @ts-ignore
     const [stream, setStream] = useState<MediaStream | null>(null);
     const [bodyPixModel, setBodyPixModel] = useState<bodyPix.BodyPix | null>(null);
+    // @ts-ignore
     const [cocoModel, setCocoModel] = useState<cocoSsd.ObjectDetection | null>(null);
     const selfieNotTaken = useRef(true); // Track if selfie has NOT been taken
 
