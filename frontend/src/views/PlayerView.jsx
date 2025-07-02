@@ -7,6 +7,7 @@ import "./PlayerView.css";
 export default function PlayerView() {
   const videoRef = useRef();
   const canvasRef = useRef();
+  const tempCanvasRef = useRef();
   const [particles, setParticles] = useState([]);
   const [bodyPixNet, setBodyPixNet] = useState(null);
   const predictionsRef = useRef([]);
