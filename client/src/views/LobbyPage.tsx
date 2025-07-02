@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './LobbyPage.css';
 import type { Lobby, Player } from './types';
 import socket from '../socket';
+import * as cocoSsd from "@tensorflow-models/coco-ssd";
+import * as bodyPix from "@tensorflow-models/body-pix";
+import "@tensorflow/tfjs";
 
 function LobbyPage() {
     const location = useLocation();
@@ -14,8 +17,17 @@ function LobbyPage() {
 
     const [errorMessage, setErrorMessage] = useState<string>('');
 
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [stream, setStream] = useState<MediaStream | null>(null);
+    const [bodyPixModel, setBodyPixModel] = useState<bodyPix.BodyPix | null>(null);
+    const [cocoModel, setCocoModel] = useState<cocoSsd.ObjectDetection | null>(null);
+
     // Handle lobby updates
     useEffect(() => {
+        initializeCamera();
+        loadModels();
+        
         if (lobby && username) {
             socket.on("lobbyUpdated", (lobby: Lobby) => {
                 setLobbyState(lobby);
@@ -50,6 +62,40 @@ function LobbyPage() {
         }
     }, [lobby, username, navigate]);
 
+    const loadModels = async () => {
+        try {
+            const [cocoModel, bodyPixModel] = await Promise.all([
+                cocoSsd.load(),
+                bodyPix.load()
+            ]);
+            setCocoModel(cocoModel);
+            setBodyPixModel(bodyPixModel);
+            console.log('Models loaded successfully:', { cocoModel, bodyPixModel });
+        } catch (error) {
+            console.error('Error loading models:', error);
+        }
+    };
+
+    const initializeCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+        //   facingMode: 'environment', // Use back camera for better photos
+        //   width: { ideal: 1280 },
+        //   height: { ideal: 720 }
+        }
+      });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        console.log(mediaStream);
+      }
+    } catch (error) {
+      console.error('Failed to access camera:', error);
+      alert('Camera access is required to detect your shirt color. Please allow camera permissions.');
+    }
+  };
+
     const handleStartGame = () => {
         if (lobbyState?.code) {
             socket.emit('startGame', { lobbyCode: lobbyState.code });
@@ -64,10 +110,91 @@ function LobbyPage() {
         }
     }
 
+    const handleTakeSelfie = () => {
+        if (!videoRef.current || !canvasRef.current) {
+            console.error('Video or canvas not available');
+            return;
+        }
+
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+            console.error('Canvas context not available');
+            return;
+        }
+
+        // Set canvas dimensions to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Draw current video frame to canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Get image data from center of canvas (for shirt color detection)
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const imageData = ctx.getImageData(centerX - 50, centerY - 50, 100, 100);
+        
+        // Calculate average RGB values
+        let totalR = 0, totalG = 0, totalB = 0;
+        const pixels = imageData.data;
+        const pixelCount = pixels.length / 4;
+
+        for (let i = 0; i < pixels.length; i += 4) {
+            totalR += pixels[i];
+            totalG += pixels[i + 1];
+            totalB += pixels[i + 2];
+        }
+
+        const avgR = Math.round(totalR / pixelCount);
+        const avgG = Math.round(totalG / pixelCount);
+        const avgB = Math.round(totalB / pixelCount);
+
+        // Send RGB data to backend
+        if (lobbyState?.code && username) {
+            socket.emit('playerColorDetected', {
+                lobbyCode: lobbyState.code,
+                username: username,
+                rgb: { r: avgR, g: avgG, b: avgB }
+            });
+
+            console.log(`Detected color RGB(${avgR}, ${avgG}, ${avgB}) for player ${username}`);
+        }
+    }
+
 
     return (
 
         <div className="lobby-page-container">
+            {/* Video stream and canvas for object detection */}
+            <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="player-video"
+                style={{
+                    background: '#000',
+                    display: 'block' // Ensure video is visible
+                }}
+            />
+            <canvas
+                ref={canvasRef}
+                className="player-canvas"
+            />
+            
+            {/* Bottom button positioned over video */}
+            {lobbyState && (
+                <button
+                    className="bottom-button"
+                    onClick={handleTakeSelfie}
+                >
+                    Take a selfie to detect your shirt color
+                </button>
+            )}
+
             {/* Floating shapes */}
             <div className="floating-shapes">
                 <div className="shape">🎮</div>
