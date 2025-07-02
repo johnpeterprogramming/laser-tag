@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StartPage.css'; // Create this file for basic styling
 import socket from '../socket';
-import type { joinOrCreateLobbyResponse } from './types';
+import type { joinOrCreateLobbyResponse } from '../../../types';
 
 
 function StartPage() {
@@ -11,6 +11,7 @@ function StartPage() {
     const [username, setUsername] = useState<string>('');
     const [lobbyCode, setLobbyCode] = useState<string>('');
     const [errorMessage, setErrorMessage] = useState<string>('');
+    const [isSpectator, setIsSpectator] = useState<boolean>(false);
 
     useEffect(() => {
         function onConnect() {
@@ -57,7 +58,7 @@ function StartPage() {
         }
 
         if (isConnected) {
-            socket.emit('joinLobby', ({ playerName: username.trim(), lobbyCode: lobbyCode.trim() }));
+            socket.emit('joinLobby', ({ playerName: username.trim(), lobbyCode: lobbyCode.trim(), isSpectator: isSpectator }));
             // TODO: add indication of loading
         } else {
             setErrorMessage("Connection hasn't started.");
@@ -73,7 +74,7 @@ function StartPage() {
         }
 
         if (isConnected) {
-            socket.emit('createLobby', { playerName: username.trim(), lobbyCode: lobbyCode.trim() });
+            socket.emit('createLobby', { playerName: username.trim(), lobbyCode: lobbyCode.trim(), isSpectator: isSpectator });
             // TODO: add indication of loading
         } else {
             setErrorMessage("Connection hasn't started.");
@@ -149,6 +150,32 @@ function StartPage() {
                     />
                 </div>
 
+                <div className="input-group">
+                    <label>Role:</label>
+                    <div>
+                        <label className="radio-option">
+                            <input
+                                type="radio"
+                                name="role"
+                                value="player"
+                                checked={!isSpectator}
+                                onChange={() => setIsSpectator(false)}
+                            />
+                            <span className="radio-label-text">Player</span>
+                        </label>
+                        <label className="radio-option">
+                            <input
+                                type="radio"
+                                name="role"
+                                value="spectator"
+                                checked={isSpectator}
+                                onChange={() => setIsSpectator(true)}
+                            />
+                            <span className="radio-label-text">Spectator 🥽</span>
+                        </label>
+                    </div>
+                </div>
+
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
 
                 <div className="button-group">
@@ -156,7 +183,7 @@ function StartPage() {
                     <button className="glow-btn" onClick={handleCreateLobby}>Create New Lobby</button>
                 </div>
 
-                <p className="note">Press Enter to join. 4-20 players.</p>
+                <p className="note">Press Enter to join. 2-20 players.</p>
             </div>
 
         </div>
