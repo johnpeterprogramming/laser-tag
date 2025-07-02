@@ -266,6 +266,40 @@
   background-position: 0% 0%;
 }
 
+/* Bottom button styling */
+.bottom-button {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 20px 40px;
+  background-color: #458588;
+  color: #fbf1c7;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.3em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  min-width: 280px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.bottom-button:hover {
+  background-color: #076678;
+  transform: translateX(-50%) translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+}
+
+.bottom-button:active {
+  transform: translateX(-50%) translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
 /* Animations */
 
 @keyframes floatShape {
