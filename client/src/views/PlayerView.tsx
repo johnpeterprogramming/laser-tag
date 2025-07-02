@@ -44,6 +44,8 @@ export default function PlayerView() {
     const [error, setError] = useState<string | null>(null);
     const [recoil, setRecoil] = useState<boolean>(false);
     const [isDead, setIsDead] = useState<boolean>(false); // Track death state
+    const [canShoot, setCanShoot] = useState<boolean>(true); // Debounce shooting
+    const [modelsLoaded, setModelsLoaded] = useState<boolean>(false); // Track if ML models are loaded
 
     const location = useLocation();
     const { username, lobby } = (location.state as LocationState) || {};
@@ -89,15 +91,29 @@ export default function PlayerView() {
         // Update immediately
         updateDebugInfo();
 
-        // Then update every second
-        const debugInterval = setInterval(updateDebugInfo, 1000);
+        // Only update periodically in development mode
+        let debugInterval: NodeJS.Timeout | undefined;
+        if (process.env.NODE_ENV === 'development') {
+            debugInterval = setInterval(updateDebugInfo, 5000); // Reduced from 1s to 5s
+        }
 
-        return () => clearInterval(debugInterval);
+        return () => {
+            if (debugInterval) clearInterval(debugInterval);
+        };
     }, [error]);
 
     // Automatically start camera initialization when component mounts
     useEffect(() => {
         initCamera();
+
+        // Cleanup function to prevent memory leaks
+        return () => {
+            // Stop all video tracks
+            if (videoRef.current?.srcObject) {
+                const stream = videoRef.current.srcObject as MediaStream;
+                stream.getTracks().forEach(track => track.stop());
+            }
+        };
     }, []);
 
     // Camera initialization function (automatically called on mount)
@@ -127,79 +143,62 @@ export default function PlayerView() {
 
             ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
-            // Draw crosshair
+            // Cache crosshair drawing to avoid recalculating every frame
+            const centerX = canvasRef.current.width / 2;
+            const centerY = canvasRef.current.height / 2;
+            
+            // Draw crosshair (optimized)
             ctx.strokeStyle = "black";
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.moveTo(
-                canvasRef.current.width / 2,
-                canvasRef.current.height / 2 - 11,
-            );
-            ctx.lineTo(
-                canvasRef.current.width / 2,
-                canvasRef.current.height / 2 + 11,
-            );
-            ctx.moveTo(
-                canvasRef.current.width / 2 - 11,
-                canvasRef.current.height / 2,
-            );
-            ctx.lineTo(
-                canvasRef.current.width / 2 + 11,
-                canvasRef.current.height / 2,
-            );
+            ctx.moveTo(centerX, centerY - 11);
+            ctx.lineTo(centerX, centerY + 11);
+            ctx.moveTo(centerX - 11, centerY);
+            ctx.lineTo(centerX + 11, centerY);
             ctx.stroke();
 
             ctx.strokeStyle = "white";
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(
-                canvasRef.current.width / 2,
-                canvasRef.current.height / 2 - 10,
-            );
-            ctx.lineTo(
-                canvasRef.current.width / 2,
-                canvasRef.current.height / 2 + 10,
-            );
-            ctx.moveTo(
-                canvasRef.current.width / 2 - 10,
-                canvasRef.current.height / 2,
-            );
-            ctx.lineTo(
-                canvasRef.current.width / 2 + 10,
-                canvasRef.current.height / 2,
-            );
+            ctx.moveTo(centerX, centerY - 10);
+            ctx.lineTo(centerX, centerY + 10);
+            ctx.moveTo(centerX - 10, centerY);
+            ctx.lineTo(centerX + 10, centerY);
             ctx.stroke();
 
-            // Draw detection boxes for people
+            // Only draw detection boxes for people with sufficient confidence
             predictions.forEach((pred) => {
-                if (pred.class === "person" && pred.score > 0.5) {
+                if (pred.class === "person" && pred.score > 0.4) { // Increased threshold
                     ctx.strokeStyle = "red";
                     ctx.lineWidth = 2;
                     ctx.strokeRect(...pred.bbox);
-                    ctx.font = "16px Arial";
-                    ctx.fillStyle = "red";
                 }
             });
         };
 
         const loadModel = async () => {
             try {
-                console.log("Loading TensorFlow model...");
-                model = await cocoSsd.load();
-
-                const bpNet = await bodyPix.load();
+                console.log("Loading TensorFlow models...");
+                const [cocoModel, bpNet] = await Promise.all([
+                    cocoSsd.load(),
+                    bodyPix.load()
+                ]);
+                
+                model = cocoModel;
                 modelLoaded = true;
                 setBodyPixNet(bpNet);
+                setModelsLoaded(true); // Set models loaded state
 
-                console.log("TensorFlow model loaded successfully");
+                console.log("TensorFlow models loaded successfully");
                 // Start detection loop only if video is ready
                 if (videoRef.current && videoRef.current.readyState >= 2) {
                     detectFrame();
                 }
             } catch (error) {
-                console.error("Error loading TensorFlow model:", error);
+                console.error("Error loading TensorFlow models:", error);
                 // Continue without model detection
                 modelLoaded = false;
+                setModelsLoaded(false);
             }
         };
 
@@ -209,15 +208,16 @@ export default function PlayerView() {
                     const predictions = await model.detect(videoRef.current);
                     predictionsRef.current = predictions;
 
-                    // Could be unnecessary, but fine for now
-                    if (canvasRef.current) {
+                    // Only redraw canvas if there are changes or every 10 frames to reduce overhead
+                    if (canvasRef.current && (predictions.length > 0 || Math.random() < 0.1)) {
                         canvas(predictions);
                     }
                 } catch (error) {
                     console.error("Detection error:", error);
                 }
             }
-            requestAnimationFrame(detectFrame);
+            // Reduce detection frequency to 15 FPS instead of 60 FPS
+            setTimeout(() => requestAnimationFrame(detectFrame), 66); // ~15 FPS
         };
 
         const setupVideoAndCanvas = (): boolean => {
@@ -285,10 +285,14 @@ export default function PlayerView() {
                 try {
                     console.log("Trying camera config:", config);
                     streamResult = await navigator.mediaDevices.getUserMedia(config);
-                    console.log("✅ Camera stream obtained with config:", config);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log("✅ Camera stream obtained with config:", config);
+                    }
                     break;
                 } catch (err) {
-                    console.log("❌ Camera config failed:", config, err);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log("❌ Camera config failed:", config, err);
+                    }
                     lastError = err as Error;
                     continue;
                 }
@@ -309,18 +313,20 @@ export default function PlayerView() {
                 videoRef.current.playsInline = true;
                 videoRef.current.autoplay = true;
 
-                // Log stream assignment
-                console.log("✅ Stream assigned to video element:", {
-                    hasStream: !!videoRef.current.srcObject,
-                    streamActive: stream.active,
-                    tracks: stream
-                        .getTracks()
-                        .map((t) => ({
-                            kind: t.kind,
-                            enabled: t.enabled,
-                            readyState: t.readyState,
-                        })),
-                });
+                // Log stream assignment (only in development)
+                if (process.env.NODE_ENV === 'development') {
+                    console.log("✅ Stream assigned to video element:", {
+                        hasStream: !!videoRef.current.srcObject,
+                        streamActive: stream.active,
+                        tracks: stream
+                            .getTracks()
+                            .map((t) => ({
+                                kind: t.kind,
+                                enabled: t.enabled,
+                                readyState: t.readyState,
+                            })),
+                    });
+                }
 
                 // Force debug update immediately
                 setCameraDebug((prev) => ({
@@ -375,15 +381,17 @@ export default function PlayerView() {
 
                     // More aggressive polling for video readiness
                     let pollCount = 0;
-                    const maxPolls = 100; // Increased to 10 seconds
+                    const maxPolls = 50; // Reduced from 100 to 50 (5 seconds instead of 10)
                     const pollInterval = setInterval(() => {
                         pollCount++;
-                        const currentDimensions = `${videoRef.current?.videoWidth || 0}x${videoRef.current?.videoHeight || 0}`;
-                        const currentReadyState = videoRef.current?.readyState || 0;
-
-                        console.log(
-                            `📊 Poll ${pollCount}/${maxPolls}: Dimensions=${currentDimensions}, ReadyState=${currentReadyState}, HasSrcObject=${!!videoRef.current?.srcObject}`,
-                        );
+                        
+                        if (process.env.NODE_ENV === 'development') {
+                            const currentDimensions = `${videoRef.current?.videoWidth || 0}x${videoRef.current?.videoHeight || 0}`;
+                            const currentReadyState = videoRef.current?.readyState || 0;
+                            console.log(
+                                `📊 Poll ${pollCount}/${maxPolls}: Dimensions=${currentDimensions}, ReadyState=${currentReadyState}`,
+                            );
+                        }
 
                         if (setupVideoAndCanvas()) {
                             console.log("✅ Video setup successful via polling");
@@ -412,13 +420,6 @@ export default function PlayerView() {
                             clearInterval(pollInterval);
                             clearTimeout(cameraTimeout);
                             setCameraLoading(false);
-                            console.log("💡 Final state check:", {
-                                hasVideoRef: !!videoRef.current,
-                                hasCanvasRef: !!canvasRef.current,
-                                hasStream: !!videoRef.current?.srcObject,
-                                videoDimensions: `${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}`,
-                                readyState: videoRef.current?.readyState,
-                            });
                         }
                     }, 100);
                 } else {
@@ -594,11 +595,13 @@ export default function PlayerView() {
 
             if (playerColor) {
                 const distance = colorDistance(detectedRGB, playerColor);
-                console.log(
-                    `🎯 Color distance to ${player.name}:`,
-                    distance,
-                    `(detected: rgb(${detectedRGB.r},${detectedRGB.g},${detectedRGB.b}), player: rgb(${playerColor.r},${playerColor.g},${playerColor.b}))`,
-                );
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(
+                        `🎯 Color distance to ${player.name}:`,
+                        distance,
+                        `(detected: rgb(${detectedRGB.r},${detectedRGB.g},${detectedRGB.b}), player: rgb(${playerColor.r},${playerColor.g},${playerColor.b}))`,
+                    );
+                }
 
                 if (distance < minDistance) {
                     minDistance = distance;
@@ -646,8 +649,8 @@ export default function PlayerView() {
     ): Promise<string | null> {
         if (!bodyPixNet || !video || !bbox) return null;
 
-        const SMALL_WIDTH = 350;
-        const SMALL_HEIGHT = 350;
+        const SMALL_WIDTH = 256; // Reduced from 350 to 256 for better performance
+        const SMALL_HEIGHT = 256;
 
         const [x, y, width, height] = bbox;
 
@@ -681,25 +684,22 @@ export default function PlayerView() {
             SMALL_HEIGHT, // destination rect
         );
 
-        // Rest of your segmentation code...
+        // Optimized segmentation settings for better performance
         const segmentation = await bodyPixNet.segmentPersonParts(tempCanvas, {
-            internalResolution: "low",
-            segmentationThreshold: 0.2,
-            scoreThreshold: 0.2,
+            internalResolution: "low", // Keep low resolution for performance
+            segmentationThreshold: 0.3, // Slightly more lenient
+            scoreThreshold: 0.3,
         });
 
-        // Process results...
-        console.log("Segmentation result:", segmentation);
+        if (process.env.NODE_ENV === 'development') {
+            console.log("Segmentation result:", segmentation);
+        }
+        
         // Parts 12, 13 = torso
         const { data: partMap } = segmentation;
-        console.log("Part map:", partMap);
-        const uniqueParts = [...new Set(partMap)];
-        console.log("Detected body parts:", uniqueParts);
-        console.log("Looking for torso parts: 12 (torso_front), 13 (torso_back)");
-
         const imgData = tempCtx.getImageData(0, 0, SMALL_WIDTH, SMALL_HEIGHT);
 
-        // Use Map to count color frequencies
+        // Use Map to count color frequencies with more aggressive quantization
         const colorFrequency = new Map();
 
         for (let i = 0; i < partMap.length; i++) {
@@ -726,18 +726,14 @@ export default function PlayerView() {
                     const g = imgData.data[pixelIndex + 1];
                     const b = imgData.data[pixelIndex + 2];
 
-                    // Quantize colors to reduce noise (group similar colors together)
-                    const quantizedR = Math.round(r / 16) * 16; // Reduce to 16 levels
-                    const quantizedG = Math.round(g / 16) * 16;
-                    const quantizedB = Math.round(b / 16) * 16;
+                    // More aggressive quantization for better performance
+                    const quantizedR = Math.round(r / 32) * 32; // Reduced from 16 to 32 levels
+                    const quantizedG = Math.round(g / 32) * 32;
+                    const quantizedB = Math.round(b / 32) * 32;
 
                     const colorKey = `${quantizedR},${quantizedG},${quantizedB}`;
 
-                    if (colorFrequency.has(colorKey)) {
-                        colorFrequency.set(colorKey, colorFrequency.get(colorKey) + 1);
-                    } else {
-                        colorFrequency.set(colorKey, 1);
-                    }
+                    colorFrequency.set(colorKey, (colorFrequency.get(colorKey) || 0) + 1);
                 }
             }
         }
@@ -755,28 +751,42 @@ export default function PlayerView() {
                 }
             }
 
-            console.log(`Mode color found with ${maxCount} occurrences:`, modeColor);
-            console.log(`Total unique colors: ${colorFrequency.size}`);
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`Mode color found with ${maxCount} occurrences:`, modeColor);
+                console.log(`Total unique colors: ${colorFrequency.size}`);
+            }
 
             return modeColor
                 ? `rgb(${modeColor.r},${modeColor.g},${modeColor.b})`
                 : null;
         } else {
-            console.log("No torso pixels found");
+            if (process.env.NODE_ENV === 'development') {
+                console.log("No torso pixels found");
+            }
             return null;
         }
     }
 
     const handleShoot = async () => {
+        // Debounce shooting to prevent performance issues
+        if (!canShoot) return;
+        
+        setCanShoot(false);
+        setTimeout(() => setCanShoot(true), 500); // 500ms cooldown
+        
         setRecoil(true);
         setTimeout(() => setRecoil(false), 100); // reset after 100ms
 
         const targets = getTargetPrediction(predictionsRef.current);
         if (targets.length > 0 && videoRef.current) {
             for (const target of targets) {
-                console.log("🎯 Hit target:", target);
+                if (process.env.NODE_ENV === 'development') {
+                    console.log("🎯 Hit target:", target);
+                }
                 const color = await segmentShirtColor(videoRef.current, target.bbox);
-                console.log("🎨 Segmented shirt color:", color);
+                if (process.env.NODE_ENV === 'development') {
+                    console.log("🎨 Segmented shirt color:", color);
+                }
 
                 if (color) {
                     // Find the closest player by color
@@ -989,19 +999,23 @@ export default function PlayerView() {
                 </div>
             )}
 
-            {/* Video stream and canvas for object detection */}
-            <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="player-video"
-                style={{
-                    background: "#000",
-                    display: "block", // Ensure video is visible
-                }}
-            />
-            <canvas ref={canvasRef} className="player-canvas" />
+            {/* Video stream and canvas for object detection - only show when models are loaded */}
+            {modelsLoaded && (
+                <>
+                    <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="player-video"
+                        style={{
+                            background: "#000",
+                            display: "block", // Ensure video is visible
+                        }}
+                    />
+                    <canvas ref={canvasRef} className="player-canvas" />
+                </>
+            )}
 
             {/* Gun overlay */}
             <div className="gun-overlay">
@@ -1018,7 +1032,7 @@ export default function PlayerView() {
             ))}
 
             {/* Camera status indicator - show loading or error states */}
-            {(cameraLoading || error) && !videoRef.current?.srcObject && (
+            {((cameraLoading || !modelsLoaded) || error) && (
                 <div
                     style={{
                         position: "absolute",
@@ -1050,6 +1064,13 @@ export default function PlayerView() {
                             >
                                 Try Again
                             </button>
+                        </>
+                    ) : !modelsLoaded ? (
+                        <>
+                            <div>🤖 Loading AI Models...</div>
+                            <div style={{ fontSize: "0.8rem", marginTop: "10px" }}>
+                                Setting up object detection and color recognition
+                            </div>
                         </>
                     ) : (
                         <>
