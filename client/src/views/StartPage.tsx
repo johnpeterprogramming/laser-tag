@@ -94,23 +94,31 @@ function StartPage() {
             {/* 🎮 Floating Shapes */}
             <div className="floating-shapes">
                 <div className="shape">🎮</div>
-                <div className="shape">🟥</div>
-                <div className="shape">🔺</div>
-                <div className="shape">🟡</div>
+                <div className="shape">⚡</div>
+                <div className="shape">💎</div>
+                <div className="shape">🔮</div>
+                <div className="shape">🚀</div>
+                <div className="shape">💫</div>
 
-                {/* Gun Target SVGs */}
+                {/* Enhanced Gun Target SVGs */}
                 <svg className="svg-target" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="50" r="40" stroke="#98971a" strokeWidth="3" fill="none" />
-                    <line x1="50" y1="10" x2="50" y2="90" stroke="#98971a" strokeWidth="2" />
-                    <line x1="10" y1="50" x2="90" y2="50" stroke="#98971a" strokeWidth="2" />
+                    <circle cx="50" cy="50" r="40" stroke="#00ffff" strokeWidth="3" fill="none" opacity="0.8" />
+                    <circle cx="50" cy="50" r="25" stroke="#00ffff" strokeWidth="2" fill="none" opacity="0.6" />
+                    <circle cx="50" cy="50" r="10" stroke="#00ffff" strokeWidth="2" fill="none" opacity="0.4" />
+                    <circle cx="50" cy="50" r="3" stroke="#00ffff" strokeWidth="2" fill="#00ffff" opacity="0.9" />
+                    <line x1="50" y1="10" x2="50" y2="90" stroke="#00ffff" strokeWidth="2" opacity="0.7" />
+                    <line x1="10" y1="50" x2="90" y2="50" stroke="#00ffff" strokeWidth="2" opacity="0.7" />
                 </svg>
 
                 <svg className="svg-target" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="50" r="30" stroke="#cc241d" strokeWidth="3" fill="none" />
-                    <line x1="50" y1="0" x2="50" y2="20" stroke="#cc241d" strokeWidth="2" />
-                    <line x1="50" y1="80" x2="50" y2="100" stroke="#cc241d" strokeWidth="2" />
-                    <line x1="0" y1="50" x2="20" y2="50" stroke="#cc241d" strokeWidth="2" />
-                    <line x1="80" y1="50" x2="100" y2="50" stroke="#cc241d" strokeWidth="2" />
+                    <circle cx="50" cy="50" r="35" stroke="#ff00ff" strokeWidth="3" fill="none" opacity="0.8" />
+                    <circle cx="50" cy="50" r="20" stroke="#ff00ff" strokeWidth="2" fill="none" opacity="0.6" />
+                    <circle cx="50" cy="50" r="8" stroke="#ff00ff" strokeWidth="2" fill="none" opacity="0.4" />
+                    <circle cx="50" cy="50" r="3" stroke="#ff00ff" strokeWidth="2" fill="#ff00ff" opacity="0.9" />
+                    <line x1="50" y1="0" x2="50" y2="20" stroke="#ff00ff" strokeWidth="2" opacity="0.7" />
+                    <line x1="50" y1="80" x2="50" y2="100" stroke="#ff00ff" strokeWidth="2" opacity="0.7" />
+                    <line x1="0" y1="50" x2="20" y2="50" stroke="#ff00ff" strokeWidth="2" opacity="0.7" />
+                    <line x1="80" y1="50" x2="100" y2="50" stroke="#ff00ff" strokeWidth="2" opacity="0.7" />
                 </svg>
             </div>
 
@@ -118,13 +126,15 @@ function StartPage() {
             <div className="laser-container">
                 <div className="laser left-to-right"></div>
                 <div className="laser right-to-left"></div>
+                <div className="laser left-to-right" style={{ top: '20%', animationDelay: '4s' }}></div>
+                <div className="laser right-to-left" style={{ top: '80%', animationDelay: '10s' }}></div>
             </div>
 
             {/* End test */}
 
             {/* Main Content Box */}
             <div className="start-box">
-                <h1 className="glow-text">Laser Tag Treasure Hunt</h1>
+                <h1 className="glow-text">Laser Tag Arena</h1>
 
                 <div className="input-group">
                     <label htmlFor="username">Username:</label>

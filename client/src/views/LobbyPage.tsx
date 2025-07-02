@@ -89,16 +89,16 @@ function LobbyPage() {
     const loadModels = async () => {
         try {
             console.log("🤖 Loading AI models...");
-            
+
             const [bodyPixModelResult, cocoModelResult] = await Promise.all([
                 bodyPix.load(),
                 cocoSsd.load()
             ]);
-            
+
             setBodyPixModel(bodyPixModelResult);
             setCocoModel(cocoModelResult);
             setModelsLoaded(true);
-            
+
             console.log('✅ AI models loaded successfully');
         } catch (error) {
             console.error('❌ Error loading AI models:', error);
@@ -107,29 +107,29 @@ function LobbyPage() {
     };
 
     const initializeCamera = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-        //   facingMode: 'environment', // Use back camera for better photos
-        //   width: { ideal: 1280 },
-        //   height: { ideal: 720 }
+        try {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    //   facingMode: 'environment', // Use back camera for better photos
+                    //   width: { ideal: 1280 },
+                    //   height: { ideal: 720 }
+                }
+            });
+            setStream(mediaStream);
+            if (videoRef.current) {
+                videoRef.current.srcObject = mediaStream;
+                console.log(mediaStream);
+            }
+        } catch (error) {
+            console.error('Failed to access camera:', error);
+            alert('Camera access is required to detect your shirt color. Please allow camera permissions.');
         }
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        console.log(mediaStream);
-      }
-    } catch (error) {
-      console.error('Failed to access camera:', error);
-      alert('Camera access is required to detect your shirt color. Please allow camera permissions.');
-    }
-  };
+    };
 
     const handleStartGame = () => {
         if (lobbyState?.code) {
             // Check if all players have shirt colors detected
-            const allPlayersHaveColors = lobbyState.players.every(player => 
+            const allPlayersHaveColors = lobbyState.players.every(player =>
                 player.r !== undefined && player.g !== undefined && player.b !== undefined
             );
 
@@ -206,24 +206,24 @@ function LobbyPage() {
         // 2 = left_face, 3 = right_face, 4 = left_upper_arm_front, 5 = left_upper_arm_back
         // We'll focus on torso and upper body parts for shirt color
         const targetBodyParts = [12, 13, 2, 3, 4, 5]; // torso_front, torso_back, faces, upper arms
-        
+
         let shirtPixels = [];
 
         // Extract pixels that belong to the torso (shirt area)
         for (let i = 0; i < partMap.length; i++) {
             const bodyPart = partMap[i];
-            
+
             if (targetBodyParts.includes(bodyPart)) {
                 const pixelIndex = i * 4;
                 const r = pixels[pixelIndex];
                 const g = pixels[pixelIndex + 1];
                 const b = pixels[pixelIndex + 2];
-                
+
                 // Quantize colors to reduce noise (group similar colors together)
                 const quantizedR = Math.round(r / 16) * 16;
                 const quantizedG = Math.round(g / 16) * 16;
                 const quantizedB = Math.round(b / 16) * 16;
-                
+
                 shirtPixels.push({ r: quantizedR, g: quantizedG, b: quantizedB });
             }
         }
@@ -235,7 +235,7 @@ function LobbyPage() {
         if (shirtPixels.length > 0) {
             // Find mode (most frequent) color
             const colorCounts = new Map();
-            
+
             shirtPixels.forEach(pixel => {
                 const colorKey = `${pixel.r},${pixel.g},${pixel.b}`;
                 colorCounts.set(colorKey, (colorCounts.get(colorKey) || 0) + 1);
@@ -244,7 +244,7 @@ function LobbyPage() {
             // Find the most frequent color
             let maxCount = 0;
             let modeColor = null;
-            
+
             for (const [colorKey, count] of colorCounts.entries()) {
                 if (count > maxCount) {
                     maxCount = count;
@@ -266,7 +266,7 @@ function LobbyPage() {
             const centerY = canvas.height / 2;
             const fallbackImageData = ctx.getImageData(centerX - 50, centerY - 50, 100, 100);
             const fallbackPixels = fallbackImageData.data;
-            
+
             const fallbackColors = [];
             for (let i = 0; i < fallbackPixels.length; i += 4) {
                 const r = Math.round(fallbackPixels[i] / 16) * 16;
@@ -284,7 +284,7 @@ function LobbyPage() {
 
             let maxCount = 0;
             let modeColor = null;
-            
+
             for (const [colorKey, count] of colorCounts.entries()) {
                 if (count > maxCount) {
                     maxCount = count;
@@ -327,19 +327,19 @@ function LobbyPage() {
 
         <div className="lobby-page-container">
             {/* Video stream and canvas for object detection */}
-            {lobbyState && selfieNotTaken.current&& (
+            {lobbyState && selfieNotTaken.current && (
                 <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="player-video"
-                style={{
-                    background: '#000',
-                    display: 'block' // Ensure video is visible
-                }}
-            />)}
-            {lobbyState && selfieNotTaken.current&& (<canvas
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="player-video"
+                    style={{
+                        background: '#000',
+                        display: 'block' // Ensure video is visible
+                    }}
+                />)}
+            {lobbyState && selfieNotTaken.current && (<canvas
                 ref={canvasRef}
                 className="player-canvas"
             />)}
@@ -377,13 +377,18 @@ function LobbyPage() {
             {/* Floating shapes */}
             <div className="floating-shapes">
                 <div className="shape">🎮</div>
-                <div className="shape">🟨</div> {/* replaced red square with lighter shape */}
+                <div className="shape">🟨</div>
                 <div className="shape">🔺</div>
                 <div className="shape">🟡</div>
+                <div className="shape">⚡</div>
+                <div className="shape">💥</div>
+                <div className="shape">🎯</div>
 
-                {/* Gun Target Shapes */}
+                {/* Enhanced Gun Target Shapes */}
                 <svg className="svg-target" viewBox="0 0 100 100" aria-hidden="true">
                     <circle cx="50" cy="50" r="40" stroke="#cc241d" strokeWidth="3" fill="none" />
+                    <circle cx="50" cy="50" r="25" stroke="#cc241d" strokeWidth="2" fill="none" />
+                    <circle cx="50" cy="50" r="10" stroke="#cc241d" strokeWidth="2" fill="none" />
                     <line x1="50" y1="0" x2="50" y2="20" stroke="#cc241d" strokeWidth="2" />
                     <line x1="50" y1="80" x2="50" y2="100" stroke="#cc241d" strokeWidth="2" />
                     <line x1="0" y1="50" x2="20" y2="50" stroke="#cc241d" strokeWidth="2" />
@@ -391,14 +396,21 @@ function LobbyPage() {
                 </svg>
 
                 <svg className="svg-target" viewBox="0 0 100 100" aria-hidden="true">
-                    <circle cx="50" cy="50" r="30" stroke="#98971a" strokeWidth="3" fill="none" />
+                    <circle cx="50" cy="50" r="35" stroke="#98971a" strokeWidth="3" fill="none" />
+                    <circle cx="50" cy="50" r="20" stroke="#98971a" strokeWidth="2" fill="none" />
+                    <circle cx="50" cy="50" r="5" stroke="#98971a" strokeWidth="2" fill="#98971a" />
                     <line x1="50" y1="10" x2="50" y2="90" stroke="#98971a" strokeWidth="2" />
                     <line x1="10" y1="50" x2="90" y2="50" stroke="#98971a" strokeWidth="2" />
                 </svg>
             </div>
 
-            {/* Laser animations */}
-            <div className="laser laser-left-to-right"></div>
+            {/* Enhanced Laser animations */}
+            <div className="laser-container">
+                <div className="laser laser-left-to-right"></div>
+                <div className="laser laser-right-to-left"></div>
+                <div className="laser laser-left-to-right" style={{ top: '25%', animationDelay: '5s' }}></div>
+                <div className="laser laser-right-to-left" style={{ top: '75%', animationDelay: '12s' }}></div>
+            </div>
             <div className="laser laser-right-to-left"></div>
 
             <h1>Lobby: {lobbyState?.code}</h1>
@@ -439,9 +451,9 @@ function LobbyPage() {
                                         </div>
                                         {/* Show player's detected color if available */}
                                         {player.r !== undefined && player.g !== undefined && player.b !== undefined && (
-                                            <div 
+                                            <div
                                                 className="player-color-circle"
-                                                style={{ 
+                                                style={{
                                                     backgroundColor: `rgb(${player.r}, ${player.g}, ${player.b})`,
                                                     width: '20px',
                                                     height: '20px',
@@ -465,19 +477,19 @@ function LobbyPage() {
                     onClick={handleStartGame}
                     className="start-game-button"
                     disabled={
-                        lobbyState.players.length < 2 || 
-                        !lobbyState.players.every(player => 
+                        lobbyState.players.length < 2 ||
+                        !lobbyState.players.every(player =>
                             player.r !== undefined && player.g !== undefined && player.b !== undefined
                         )
                     }
                 >
-                    {lobbyState.players.length < 2 
+                    {lobbyState.players.length < 2
                         ? `Need ${2 - lobbyState.players.length} more players`
-                        : !lobbyState.players.every(player => 
+                        : !lobbyState.players.every(player =>
                             player.r !== undefined && player.g !== undefined && player.b !== undefined
                         )
-                        ? "Waiting for all players to detect shirt colors"
-                        : 'Start Game'
+                            ? "Waiting for all players to detect shirt colors"
+                            : 'Start Game'
                     }
                 </button>
             )}

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700;800&display=swap');
+
 .player-wrapper {
     position: fixed;
     top: 0;
@@ -38,15 +40,18 @@
     bottom: 1rem;
     left: 50%;
     transform: translateX(-50%);
-    background-color: #cc241d;
+    background: linear-gradient(145deg, 
+      rgba(255, 0, 80, 0.9), 
+      rgba(200, 0, 60, 0.9));
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
     font-size: 1.2rem;
+    font-family: 'Orbitron', monospace;
     border-radius: 0.5rem;
     cursor: pointer;
     z-index: 10;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 10px rgba(255, 0, 80, 0.5);
     z-index: 3;
 }
 
@@ -146,10 +151,14 @@
 
 .health-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #cc241d 0%, #d79921 50%, #98971a 100%);
+    background: linear-gradient(90deg, 
+      #ff0040 0%, 
+      #ff7700 50%, 
+      #00ff88 100%);
     background-size: 300% 100%;
     background-position: 100% 0%;
     transition: width 0.3s ease, background-position 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
 }
 
 /* Dynamic health bar colors based on health percentage */
@@ -174,19 +183,26 @@
 }
 
 .heal-button {
-    background-color: #98971a;
+    background: linear-gradient(145deg, 
+      rgba(0, 255, 150, 0.8), 
+      rgba(0, 200, 100, 0.8));
     color: white;
     border: none;
     padding: 8px 12px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.8rem;
-    transition: background-color 0.3s ease;
+    font-family: 'Exo 2', sans-serif;
+    transition: all 0.3s ease;
     width: 100%;
+    box-shadow: 0 0 10px rgba(0, 255, 150, 0.3);
 }
 
 .heal-button:hover:not(:disabled) {
-    background-color: #b8bb26;
+    background: linear-gradient(145deg, 
+      rgba(0, 255, 150, 1), 
+      rgba(0, 200, 100, 1));
+    box-shadow: 0 0 20px rgba(0, 255, 150, 0.5);
 }
 
 .heal-button:disabled {
@@ -215,13 +231,16 @@
 }
 
 .debug-button {
-    background-color: #cc241d;
+    background: linear-gradient(145deg, 
+      rgba(255, 0, 80, 0.8), 
+      rgba(200, 0, 60, 0.8));
     color: white;
     border: none;
     padding: 8px 12px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.8rem;
+    font-family: 'Exo 2', sans-serif;
     margin: 5px 0;
     width: 100%;
     transition: background-color 0.3s ease;
@@ -239,23 +258,32 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: #fbf1c7;
+    background: linear-gradient(135deg, 
+      #0a0a1a 0%, 
+      #1a1a2e 25%, 
+      #16213e 50%, 
+      #0f1729 75%, 
+      #0a0a1a 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-family: "Inter", Arial, sans-serif;
-    color: #3c3836;
+    font-family: 'Exo 2', sans-serif;
+    color: #ffffff;
     z-index: 1000;
 }
 
 .loading-overlay {
-    background: linear-gradient(45deg, #fbf1c7, #ebdbb2);
+    background: linear-gradient(45deg, 
+      rgba(26, 26, 46, 0.95), 
+      rgba(40, 40, 80, 0.85));
 }
 
 .error-overlay {
-    background: #cc241d;
-    color: #fbf1c7;
+    background: linear-gradient(145deg, 
+      rgba(60, 20, 20, 0.95), 
+      rgba(80, 20, 40, 0.85));
+    color: #ffffff;
 }
 
 .loading-overlay::before {
@@ -302,42 +330,53 @@
 .death-content {
     text-align: center;
     color: white;
-    font-family: "Inter", Arial, sans-serif;
+    font-family: 'Exo 2', sans-serif;
 }
 
 .skull-icon {
     font-size: 8rem;
     margin-bottom: 1rem;
     animation: skullPulse 2s ease-in-out infinite;
-    filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.7));
+    filter: drop-shadow(0 0 20px rgba(255, 0, 80, 0.7));
 }
 
 .death-title {
     font-size: 4rem;
     font-weight: bold;
-    color: #cc241d;
+    color: #ff0050;
     margin: 0 0 1rem 0;
-    text-shadow: 0 0 10px rgba(204, 36, 29, 0.8);
+    font-family: 'Orbitron', monospace;
+    text-shadow: 
+      0 0 10px #ff0050,
+      0 0 20px #ff0050,
+      0 0 30px #ff0050;
     animation: deathTitleGlow 1.5s ease-in-out infinite alternate;
 }
 
 .death-subtitle {
     font-size: 1.5rem;
-    color: #fbf1c7;
+    color: #ffffff;
     margin: 0 0 2rem 0;
     opacity: 0.8;
+    font-family: 'Exo 2', sans-serif;
 }
 
 .death-timer {
     font-size: 1.2rem;
-    color: #d79921;
+    color: #00ffff;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
 .timer-number {
     font-size: 3rem;
     font-weight: bold;
-    color: #d79921;
-    text-shadow: 0 0 15px rgba(215, 153, 33, 0.8);
+    color: #00ffff;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 
+      0 0 15px #00ffff,
+      0 0 30px #00ffff,
+      0 0 45px #00ffff;
     animation: timerPulse 1s ease-in-out infinite;
 }
 
@@ -402,53 +441,63 @@
 .winner-content {
     text-align: center;
     color: white;
-    font-family: "Inter", Arial, sans-serif;
+    font-family: 'Exo 2', sans-serif;
 }
 
 .winner-icon {
     font-size: 8rem;
     margin-bottom: 1rem;
     animation: trophySpin 3s ease-in-out infinite;
-    filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.9));
+    filter: drop-shadow(0 0 30px rgba(0, 255, 255, 0.9));
 }
 
 .winner-title {
     font-size: 4rem;
     font-weight: bold;
-    color: #d79921;
+    color: #00ffff;
     margin: 0 0 1rem 0;
-    text-shadow: 0 0 15px rgba(215, 153, 33, 1);
+    font-family: 'Orbitron', monospace;
+    text-shadow: 
+      0 0 15px #00ffff,
+      0 0 30px #00ffff,
+      0 0 45px #00ffff;
     animation: winnerTitleGlow 2s ease-in-out infinite alternate;
 }
 
 .winner-subtitle {
     font-size: 1.5rem;
-    color: #fbf1c7;
+    color: #ffffff;
     margin: 0 0 2rem 0;
     opacity: 0.9;
     max-width: 600px;
     line-height: 1.4;
+    font-family: 'Exo 2', sans-serif;
 }
 
 .winner-button {
-    background: linear-gradient(45deg, #d79921, #b8bb26);
-    color: #3c3836;
+    background: linear-gradient(45deg, 
+      rgba(0, 255, 255, 0.8), 
+      rgba(255, 0, 255, 0.8));
+    color: #ffffff;
     border: none;
     padding: 15px 30px;
     font-size: 1.2rem;
     font-weight: bold;
+    font-family: 'Orbitron', monospace;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(215, 153, 33, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 255, 255, 0.4);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
 .winner-button:hover {
-    background: linear-gradient(45deg, #b8bb26, #98971a);
+    background: linear-gradient(45deg, 
+      rgba(0, 255, 255, 1), 
+      rgba(255, 0, 255, 1));
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(215, 153, 33, 0.6);
+    box-shadow: 0 6px 20px rgba(0, 255, 255, 0.6);
 }
 
 @keyframes winnerFadeIn {
