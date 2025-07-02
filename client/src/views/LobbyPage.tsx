@@ -65,11 +65,7 @@ function LobbyPage() {
 
     const loadModels = async () => {
         try {
-            const [cocoModel, bodyPixModel] = await Promise.all([
-                cocoSsd.load(),
-                bodyPix.load()
-            ]);
-            setCocoModel(cocoModel);
+            const bodyPixModel = await bodyPix.load();
             setBodyPixModel(bodyPixModel);
             console.log('Models loaded successfully:', { cocoModel, bodyPixModel });
         } catch (error) {
@@ -111,7 +107,7 @@ function LobbyPage() {
         }
     }
 
-    const handleTakeSelfie = () => {
+    const handleTakeSelfie = async () => {
         if (!videoRef.current || !canvasRef.current) {
             console.error('Video or canvas not available');
             return;
@@ -120,7 +116,6 @@ function LobbyPage() {
         const video = videoRef.current;
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
-        // const cocoModel = cocoModel.current;
 
         if (!ctx) {
             console.error('Canvas context not available');
@@ -134,42 +129,149 @@ function LobbyPage() {
         // Draw current video frame to canvas
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Get image data from center of canvas (for shirt color detection)
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const imageData = ctx.getImageData(centerX - 50, centerY - 50, 100, 100);
-        
-        // Calculate average RGB values
-        let totalR = 0, totalG = 0, totalB = 0;
-        const pixels = imageData.data;
-        const pixelCount = pixels.length / 4;
+        // Perform body segmentation
+        const segmentation = await bodyPixModel?.segmentPersonParts(video, {
+            flipHorizontal: false,
+            internalResolution: 'low',
+            segmentationThreshold: 0.7,
+            maxDetections: 1,
+            scoreThreshold: 0.5
+        });
 
-        for (let i = 0; i < pixels.length; i += 4) {
-            totalR += pixels[i];
-            totalG += pixels[i + 1];
-            totalB += pixels[i + 2];
+        console.log('Segmentation result:', segmentation);
+
+        if (!segmentation || !segmentation.data) {
+            console.error('Segmentation failed');
+            return;
         }
 
-        const avgR = Math.round(totalR / pixelCount);
-        const avgG = Math.round(totalG / pixelCount);
-        const avgB = Math.round(totalB / pixelCount);
+        const { data: partMap } = segmentation;
+        const uniqueParts = [...new Set(partMap)];
+        console.log('Detected body parts:', uniqueParts);
+
+        // Get the original image data from canvas
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imageData.data;
+
+        // Body part IDs in BodyPix (torso area for shirt detection):
+        // 12 = torso_front, 13 = torso_back
+        // 2 = left_face, 3 = right_face, 4 = left_upper_arm_front, 5 = left_upper_arm_back
+        // We'll focus on torso and upper body parts for shirt color
+        const targetBodyParts = [12, 13, 2, 3, 4, 5]; // torso_front, torso_back, faces, upper arms
+        
+        let shirtPixels = [];
+
+        // Extract pixels that belong to the torso (shirt area)
+        for (let i = 0; i < partMap.length; i++) {
+            const bodyPart = partMap[i];
+            
+            if (targetBodyParts.includes(bodyPart)) {
+                const pixelIndex = i * 4;
+                const r = pixels[pixelIndex];
+                const g = pixels[pixelIndex + 1];
+                const b = pixels[pixelIndex + 2];
+                
+                // Quantize colors to reduce noise (group similar colors together)
+                const quantizedR = Math.round(r / 16) * 16;
+                const quantizedG = Math.round(g / 16) * 16;
+                const quantizedB = Math.round(b / 16) * 16;
+                
+                shirtPixels.push({ r: quantizedR, g: quantizedG, b: quantizedB });
+            }
+        }
+
+        console.log(`Found ${shirtPixels.length} shirt pixels from torso segmentation`);
+
+        let modeR, modeG, modeB;
+
+        if (shirtPixels.length > 0) {
+            // Find mode (most frequent) color
+            const colorCounts = new Map();
+            
+            shirtPixels.forEach(pixel => {
+                const colorKey = `${pixel.r},${pixel.g},${pixel.b}`;
+                colorCounts.set(colorKey, (colorCounts.get(colorKey) || 0) + 1);
+            });
+
+            // Find the most frequent color
+            let maxCount = 0;
+            let modeColor = null;
+            
+            for (const [colorKey, count] of colorCounts.entries()) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    modeColor = colorKey;
+                }
+            }
+
+            if (modeColor) {
+                const [r, g, b] = modeColor.split(',').map(Number);
+                modeR = r;
+                modeG = g;
+                modeB = b;
+                console.log(`Shirt color from torso mode: RGB(${modeR}, ${modeG}, ${modeB}) with ${maxCount} occurrences`);
+            }
+        } else {
+            // Fallback to center area if no torso detected
+            console.warn('No torso detected, falling back to center area sampling');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const fallbackImageData = ctx.getImageData(centerX - 50, centerY - 50, 100, 100);
+            const fallbackPixels = fallbackImageData.data;
+            
+            const fallbackColors = [];
+            for (let i = 0; i < fallbackPixels.length; i += 4) {
+                const r = Math.round(fallbackPixels[i] / 16) * 16;
+                const g = Math.round(fallbackPixels[i + 1] / 16) * 16;
+                const b = Math.round(fallbackPixels[i + 2] / 16) * 16;
+                fallbackColors.push({ r, g, b });
+            }
+
+            // Find mode color in fallback area
+            const colorCounts = new Map();
+            fallbackColors.forEach(pixel => {
+                const colorKey = `${pixel.r},${pixel.g},${pixel.b}`;
+                colorCounts.set(colorKey, (colorCounts.get(colorKey) || 0) + 1);
+            });
+
+            let maxCount = 0;
+            let modeColor = null;
+            
+            for (const [colorKey, count] of colorCounts.entries()) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    modeColor = colorKey;
+                }
+            }
+
+            if (modeColor) {
+                const [r, g, b] = modeColor.split(',').map(Number);
+                modeR = r;
+                modeG = g;
+                modeB = b;
+                console.log(`Fallback shirt color from center mode: RGB(${modeR}, ${modeG}, ${modeB}) with ${maxCount} occurrences`);
+            }
+        }
 
         // Send RGB data to backend
         if (lobbyState?.code && username) {
             socket.emit('playerColorDetected', {
                 lobbyCode: lobbyState.code,
                 username: username,
-                rgb: { r: avgR, g: avgG, b: avgB }
+                rgb: { r: modeR, g: modeG, b: modeB }
             });
 
-            console.log(`Detected color RGB(${avgR}, ${avgG}, ${avgB}) for player ${username}`);
+            console.log(`Detected shirt color RGB(${modeR}, ${modeG}, ${modeB}) for player ${username} using mode color from ${shirtPixels.length} torso pixels`);
         }
 
-        // hide the video element and button after taking a selfie
+        // Hide the video and canvas after taking a selfie
         if (videoRef.current) {
-            videoRef.current.style.display = 'none'; // Hide the video element after taking a selfie
-            selfieNotTaken.current = false; // Mark that a selfie has been taken
+            videoRef.current.style.display = 'none';
         }
+        if (canvasRef.current) {
+            canvasRef.current.style.display = 'none';
+        }
+        selfieNotTaken.current = false;
     }
 
 
