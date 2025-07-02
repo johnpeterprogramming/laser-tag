@@ -687,7 +687,7 @@ export default function PlayerView() {
     return (
         <div className="player-wrapper" onClick={handleShoot}>
             {/* Camera Debug Panel - only show if loading or in development */}
-            {(cameraLoading || process.env.NODE_ENV === 'development') && (
+            {/* {(cameraLoading || process.env.NODE_ENV === 'development') && (
                 <div style={{
                     position: 'fixed',
                     top: '10px',
@@ -726,7 +726,7 @@ export default function PlayerView() {
                         🔄 Retry
                     </button>
                 </div>
-            )}
+            )} */}
 
             {/* Health Bar */}
             <div className="player-health-overlay">
@@ -742,7 +742,7 @@ export default function PlayerView() {
                         ></div>
                     </div>
                 </div>
-                <button
+                {/* <button
                     className="heal-button"
                     onClick={(e) => {
                         e.stopPropagation();
@@ -751,7 +751,7 @@ export default function PlayerView() {
                     disabled={health >= maxHealth}
                 >
                     Heal (+25)
-                </button>
+                </button> */}
             </div>
 
             {/* Debug panel for testing health system */}
