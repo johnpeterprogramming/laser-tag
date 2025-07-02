@@ -154,6 +154,33 @@ function LobbyPage() {
     return (
 
         <div className="lobby-page-container">
+            {/* Video stream and canvas for object detection */}
+            <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="player-video"
+                style={{
+                    background: '#000',
+                    display: 'block' // Ensure video is visible
+                }}
+            />
+            <canvas
+                ref={canvasRef}
+                className="player-canvas"
+            />
+            
+            {/* Bottom button positioned over video */}
+            {lobbyState && (
+                <button
+                    className="bottom-button"
+                    onClick={handleTakeSelfie}
+                >
+                    Take a selfie to detect your shirt color
+                </button>
+            )}
+
             {/* Floating shapes */}
             <div className="floating-shapes">
                 <div className="shape">🎮</div>
@@ -223,16 +250,6 @@ function LobbyPage() {
             )}
             {!(playerState?.isHost ?? false) && ( // This part won't show with isLobbyCreator true, but kept for future
                 <p className="waiting-message">Waiting for the host to start the game...</p>
-            )}
-
-            {/* Bottom button */}
-            {lobbyState &&(
-            <button
-                className="bottom-button"
-                onClick={handleTakeSelfie}
-            >
-                Take a selfie to detect your shirt color
-            </button>
             )}
         </div>
     );
