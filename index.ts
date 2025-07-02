@@ -5,6 +5,9 @@ import { Server, Socket } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import type { Lobby, Player } from './types.ts';
+
+
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,21 +42,13 @@ app.get('/api/test', (_req: Request, res: Response) => {
   res.json({ message: "Laser Tag Server is running!" });
 });
 
-// Socket logic : TODO: reduce duplication, same type is used for frontend
-type Player = { id: string, name: string, isHost: boolean, health: number, maxHealth: number, r?: number, g?: number, b?: number };
-type Lobby = {
-    code: string,
-    players: Player[];
-    state: 'waiting' | 'active' | 'ended';
-};
-
 const lobbies: Record<string, Lobby> = {};
 
 io.on('connection', (socket: Socket) => {
     console.log("A user connected");
 
     // Create lobby
-    socket.on('createLobby', ({ playerName, lobbyCode }) => {
+    socket.on('createLobby', ({ playerName, lobbyCode, isSpectator }) => {
         // Check if lobby already exists
         if (lobbies[lobbyCode]) {
             socket.emit('createLobbyResponse', {
@@ -78,7 +73,7 @@ io.on('connection', (socket: Socket) => {
         lobbies[lobbyCode] = {
             code: lobbyCode,
             state: 'waiting',
-            players: [{ id: socket.id, name: playerName, isHost: true, health: 100, maxHealth: 100 }],
+            players: [{ id: socket.id, name: playerName, isHost: true, isSpectator: !!isSpectator, health: 100, maxHealth: 100 }],
         };
 
 
@@ -94,7 +89,7 @@ io.on('connection', (socket: Socket) => {
     });
 
     // Join lobby
-    socket.on('joinLobby', ({ playerName, lobbyCode }) => {
+    socket.on('joinLobby', ({ playerName, lobbyCode, isSpectator }) => {
         const lobby = lobbies[lobbyCode];
 
         // Check if lobby exists
@@ -138,7 +133,7 @@ io.on('connection', (socket: Socket) => {
             return;
         }
 
-        lobby.players.push({ id: socket.id, name: playerName, isHost: false, health: 100, maxHealth: 100 });
+        lobby.players.push({ id: socket.id, name: playerName, isHost: false, health: 100, maxHealth: 100, isSpectator: !!isSpectator });
 
         // Can join lobby
         socket.emit('joinLobbyResponse', {
@@ -288,7 +283,7 @@ io.on('connection', (socket: Socket) => {
         // If no players in lobby - delete lobby
         for (const lobbyCode in lobbies) {
             const lobby = lobbies[lobbyCode];
-            if (lobby.players.length == 0)
+            if (lobby.players.length === 0)
                 delete lobbies[lobbyCode];
         }
 

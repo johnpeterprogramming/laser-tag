@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './LobbyPage.css';
-import type { Lobby, Player } from './types';
+import type { Lobby, Player } from '../../../types';
 import socket from '../socket';
 
 function LobbyPage() {
@@ -109,7 +109,8 @@ function LobbyPage() {
                             <div className="player-info">
                                 <span className="player-name">
                                     {player.name} {player.name === username && '(You)'}
-                                    {player.isHost && lobbyState.players[0] && player.id === lobbyState.players[0].id && ' (Host)'}
+                                    {player.isSpectator && ' 🥽 '}
+                                    {player.isHost && ' (Host)'}
                                 </span>
                                 <div className="player-health">
                                     <span className="health-text">{player.health}/{player.maxHealth} HP</span>
