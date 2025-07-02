@@ -125,6 +125,34 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.8);
   text-align: center;
 }
+
+/* Player selector styles */
+.player-selector {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.player-selector label {
+  color: #3c3836;
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+.player-selector select {
+  background-color: #fbf1c7;
+  border: 2px solid #d5c4a1;
+  border-radius: 4px;
+  padding: 0.5rem;
+  color: #3c3836;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.player-selector select:focus {
+  outline: none;
+  border-color: #98971a;
+}
+
 /* Mobile: Portrait layout override */
 @media (max-width: 768px) {
   .video-wrapper {

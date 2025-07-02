@@ -108,3 +108,177 @@
         transform: translate(calc(-50%), calc(-600%)) scale(0.5);
     }
 }
+
+/* Health overlay styles */
+.player-health-overlay {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 15;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 8px;
+    pointer-events: auto;
+    min-width: 200px;
+}
+
+.health-bar-container {
+    margin-bottom: 10px;
+}
+
+.health-labels {
+    display: flex;
+    justify-content: space-between;
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.health-bar-track {
+    width: 100%;
+    height: 12px;
+    background-color: #444;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #666;
+}
+
+.health-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #cc241d 0%, #d79921 50%, #98971a 100%);
+    background-size: 300% 100%;
+    background-position: 100% 0%;
+    transition: width 0.3s ease, background-position 0.3s ease;
+}
+
+/* Dynamic health bar colors based on health percentage */
+.health-bar-fill[style*="100%"], 
+.health-bar-fill[style*="90%"], 
+.health-bar-fill[style*="80%"] {
+    background-position: 100% 0%; /* Green */
+}
+
+.health-bar-fill[style*="70%"], 
+.health-bar-fill[style*="60%"], 
+.health-bar-fill[style*="50%"] {
+    background-position: 50% 0%; /* Yellow */
+}
+
+.health-bar-fill[style*="40%"], 
+.health-bar-fill[style*="30%"], 
+.health-bar-fill[style*="20%"], 
+.health-bar-fill[style*="10%"], 
+.health-bar-fill[style*="0%"] {
+    background-position: 0% 0%; /* Red */
+}
+
+.heal-button {
+    background-color: #98971a;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background-color 0.3s ease;
+    width: 100%;
+}
+
+.heal-button:hover:not(:disabled) {
+    background-color: #b8bb26;
+}
+
+.heal-button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Debug panel styles */
+.debug-panel {
+    position: absolute;
+    top: 200px;
+    left: 20px;
+    z-index: 15;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    border-radius: 8px;
+    pointer-events: auto;
+    min-width: 200px;
+}
+
+.debug-panel h3 {
+    color: white;
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+}
+
+.debug-button {
+    background-color: #cc241d;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin: 5px 0;
+    width: 100%;
+    transition: background-color 0.3s ease;
+}
+
+.debug-button:hover {
+    background-color: #9d0006;
+}
+
+/* Loading and error overlays */
+.loading-overlay,
+.error-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fbf1c7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: "Inter", Arial, sans-serif;
+    color: #3c3836;
+    z-index: 1000;
+}
+
+.loading-overlay {
+    background: linear-gradient(45deg, #fbf1c7, #ebdbb2);
+}
+
+.error-overlay {
+    background: #cc241d;
+    color: #fbf1c7;
+}
+
+.loading-overlay::before {
+    content: "🎮";
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: bounce 2s infinite;
+}
+
+.error-overlay::before {
+    content: "⚠️";
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-30px);
+    }
+    60% {
+        transform: translateY(-15px);
+    }
+}

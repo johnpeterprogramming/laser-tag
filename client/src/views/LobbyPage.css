@@ -179,6 +179,67 @@
   animation-delay: 7s;
 }
 
+/* Player health styles */
+.player-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.player-name {
+  flex: 1;
+}
+
+.player-health {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 120px;
+}
+
+.health-text {
+  font-size: 0.9em;
+  color: #7c6f64;
+  min-width: 60px;
+}
+
+.health-bar {
+  width: 60px;
+  height: 8px;
+  background-color: #d5c4a1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.health-fill {
+  height: 100%;
+  background-color: #98971a;
+  transition: width 0.3s ease;
+}
+
+/* Health bar color variations */
+.health-fill {
+  background: linear-gradient(90deg, #cc241d 0%, #d79921 50%, #98971a 100%);
+  background-size: 300% 100%;
+  background-position: 100% 0%;
+  animation: none;
+}
+
+.player-list li .health-fill[style*="100%"] {
+  background-position: 100% 0%;
+}
+
+.player-list li .health-fill[style*="75%"], 
+.player-list li .health-fill[style*="50%"] {
+  background-position: 50% 0%;
+}
+
+.player-list li .health-fill[style*="25%"],
+.player-list li .health-fill[style*="0%"] {
+  background-position: 0% 0%;
+}
+
 /* Animations */
 
 @keyframes floatShape {
