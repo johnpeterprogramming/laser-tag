@@ -129,7 +129,7 @@
 .health-labels {
     display: flex;
     justify-content: space-between;
-    color: white;
+    color: white !important;
     font-weight: bold;
     font-size: 0.9rem;
     margin-bottom: 5px;
@@ -280,5 +280,105 @@
     }
     60% {
         transform: translateY(-15px);
+    }
+}
+
+/* Death screen overlay */
+.death-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: deathFadeIn 0.5s ease-in;
+}
+
+.death-content {
+    text-align: center;
+    color: white;
+    font-family: "Inter", Arial, sans-serif;
+}
+
+.skull-icon {
+    font-size: 8rem;
+    margin-bottom: 1rem;
+    animation: skullPulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.7));
+}
+
+.death-title {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #cc241d;
+    margin: 0 0 1rem 0;
+    text-shadow: 0 0 10px rgba(204, 36, 29, 0.8);
+    animation: deathTitleGlow 1.5s ease-in-out infinite alternate;
+}
+
+.death-subtitle {
+    font-size: 1.5rem;
+    color: #fbf1c7;
+    margin: 0 0 2rem 0;
+    opacity: 0.8;
+}
+
+.death-timer {
+    font-size: 1.2rem;
+    color: #d79921;
+}
+
+.timer-number {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #d79921;
+    text-shadow: 0 0 15px rgba(215, 153, 33, 0.8);
+    animation: timerPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+@keyframes deathFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes skullPulse {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.7));
+    }
+    50% {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 30px rgba(255, 0, 0, 1));
+    }
+}
+
+@keyframes deathTitleGlow {
+    0% {
+        text-shadow: 0 0 10px rgba(204, 36, 29, 0.8);
+    }
+    100% {
+        text-shadow: 0 0 20px rgba(204, 36, 29, 1), 0 0 30px rgba(204, 36, 29, 0.6);
     }
 }

@@ -7,7 +7,7 @@ export type Lobby = {
 };
 
 export interface joinOrCreateLobbyResponse {
-    success: boolean,
-    message: string,
-    lobby: Lobby | null // only returns a lobby on success
+    success: boolean;
+    message: string;
+    lobby: Lobby | null; // only returns a lobby on success
 }
