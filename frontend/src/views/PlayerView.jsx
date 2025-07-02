@@ -59,6 +59,7 @@ export default function PlayerView() {
     const loadModel = async () => {
       model = await cocoSsd.load();
       const bpNet = await bodyPix.load();
+      bodyPixModel = bpNet;
       modelLoaded = true;
       setBodyPixNet(bpNet);
       detectFrame();
@@ -67,6 +68,8 @@ export default function PlayerView() {
     const detectFrame = async () => {
       if (videoRef.current && modelLoaded) {
         const predictions = await model.detect(videoRef.current);
+        const segmentedPredictions = await bodyPixModel.segmentPerson(videoRef.current, {multiSegmentation: true, segmentBodyParts: true});
+        console.log("Segmented Predictions:", segmentedPredictions);
         predictionsRef.current = predictions;
         if (canvasRef.current) {
           canvas(predictions);
@@ -151,6 +154,29 @@ export default function PlayerView() {
     });
 
     // Process results...
+    console.log("Segmentation result:", segmentation);
+        // Parts 12, 13 = torso
+    const { data: partMap } = segmentation;
+    console.log("Part map:", partMap);
+    const imgData = tempCtx.getImageData(0, 0, width, height);
+    let r = 0, g = 0, b = 0, count = 0;
+    for (let i = 0; i < partMap.length; i++) {
+      if (partMap[i] === 12 || partMap[i] === 13 ) {
+        r += imgData.data[i * 4];
+        g += imgData.data[i * 4 + 1];
+        b += imgData.data[i * 4 + 2];
+        count++;
+      }
+    }
+    if (count > 0) {
+      return {
+        r: Math.round(r / count),
+        g: Math.round(g / count),
+        b: Math.round(b / count)
+      };
+    } else {
+      return null;
+    }
   }
 
   
@@ -162,6 +188,7 @@ export default function PlayerView() {
       for (const target of targets) {
         console.log("Hit target:", target);
         const color = await segmentShirtColor(videoRef.current, target.bbox);
+        console.log("Segmented shirt color:", color);
         // Here you can handle the hit logic, e.g., send a hit event to the server
       }
     }
