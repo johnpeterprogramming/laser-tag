@@ -100,32 +100,34 @@ function LobbyPage() {
             {errorMessage && <p className="error-message">{errorMessage}</p>}
 
             <h2>Players ({lobbyState?.players.length ?? 0}/20):</h2>
-            {lobbyState?.players.length === 0 ? (
-                <p>No players in this lobby yet.</p>
-            ) : (
-                <ul className="player-list">
-                    {lobbyState?.players.map((player: Player) => (
-                        <li key={player.id} className={player.name === username ? 'current-player' : ''}>
-                            <div className="player-info">
-                                <span className="player-name">
-                                    {player.name} {player.name === username && '(You)'}
-                                    {player.isSpectator && ' 🥽 '}
-                                    {player.isHost && ' (Host)'}
-                                </span>
-                                <div className="player-health">
-                                    <span className="health-text">{player.health}/{player.maxHealth} HP</span>
-                                    <div className="health-bar">
-                                        <div
-                                            className="health-fill"
-                                            style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
-                                        ></div>
+            <div className="player-list-scroll-wrapper">
+                {lobbyState?.players.length === 0 ? (
+                    <p>No players in this lobby yet.</p>
+                ) : (
+                    <ul className="player-list">
+                        {lobbyState?.players.map((player: Player) => (
+                            <li key={player.id} className={player.name === username ? 'current-player' : ''}>
+                                <div className="player-info">
+                                    <span className="player-name">
+                                        {player.name} {player.name === username && '(You)'}
+                                        {player.isSpectator && ' 🥽 '}
+                                        {player.isHost && ' (Host)'}
+                                    </span>
+                                    <div className="player-health">
+                                        <span className="health-text">{player.health}/{player.maxHealth} HP</span>
+                                        <div className="health-bar">
+                                            <div
+                                                className="health-fill"
+                                                style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
+                                            ></div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            )}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
 
             {lobbyState && playerState?.isHost && (
                 <button
