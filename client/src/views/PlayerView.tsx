@@ -37,13 +37,9 @@ export default function PlayerView() {
     const [bodyPixNet, setBodyPixNet] = useState<bodyPix.BodyPix | null>(null);
     const predictionsRef = useRef<cocoSsd.DetectedObject[]>([]);
     const [cocoModel, setCocoModel] = useState<cocoSsd.ObjectDetection | null>(null);
-    const [cocoModel, setCocoModel] = useState<cocoSsd.ObjectDetection | null>(null);
 
     const [health, setHealth] = useState<number>(100);
     const [maxHealth] = useState<number>(100);
-    const [cameraRequested, setCameraRequested] = useState<boolean>(false);
-    const [cameraLoading, setCameraLoading] = useState<boolean>(false);
-    const [modelsLoaded, setModelsLoaded] = useState<boolean>(false);
     const [cameraRequested, setCameraRequested] = useState<boolean>(false);
     const [cameraLoading, setCameraLoading] = useState<boolean>(false);
     const [modelsLoaded, setModelsLoaded] = useState<boolean>(false);
@@ -89,18 +85,11 @@ export default function PlayerView() {
             initCamera();
         }
     }, [modelsLoaded]);
-        if (modelsLoaded) {
-            initCamera();
-        }
-    }, [modelsLoaded]);
 
-    // Camera initialization function (called after models are loaded)
     // Camera initialization function (called after models are loaded)
     const initCamera = async () => {
         if (cameraRequested || !modelsLoaded || !cocoModel || !bodyPixNet) return; // Prevent multiple requests and ensure models are loaded
-        if (cameraRequested || !modelsLoaded || !cocoModel || !bodyPixNet) return; // Prevent multiple requests and ensure models are loaded
 
-        console.log("🎯 Starting camera initialization with pre-loaded models");
         console.log("🎯 Starting camera initialization with pre-loaded models");
         setCameraRequested(true);
         setCameraLoading(true);
