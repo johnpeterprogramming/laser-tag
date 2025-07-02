@@ -1,58 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import './LobbyPage.css'; 
+import './LobbyPage.css';
 import type { Lobby, Player } from './types';
 import socket from '../socket';
 
 function LobbyPage() {
   const location = useLocation();
-  const { username , lobby } = location.state || {};
+  const { username, lobby } = location.state || {};
   const navigate = useNavigate();
 
-  const [lobbyState, setLobbyState] = useState<Lobby|null>(lobby);
-  const [playerState, setPlayerState] = useState<Player|null>(null);
-
+  const [lobbyState, setLobbyState] = useState<Lobby | null>(lobby);
+  const [playerState, setPlayerState] = useState<Player | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Handle lobby updates
   useEffect(() => {
     if (lobby && username) {
-      socket.on("lobbyUpdated", (lobby: Lobby) => {
-        setLobbyState(lobby);
-
-        const currentPlayer = lobby.players.find(player => player.name === username);
+      socket.on('lobbyUpdated', (updatedLobby: Lobby) => {
+        setLobbyState(updatedLobby);
+        const currentPlayer = updatedLobby.players.find((p) => p.name === username);
         setPlayerState(currentPlayer || null);
       });
-      return () => {
-        socket.off("lobbyUpdated");
-      }
     } else {
-      setErrorMessage("Invalid lobby access. Redirecting...");
+      setErrorMessage('Invalid lobby access. Redirecting...');
       const timer = setTimeout(() => {
-        navigate('/', { replace: true}) // remove history when using back button
-      }, 2000)
-
+        navigate('/', { replace: true });
+      }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [lobbyState, username]);
+
+    return () => {
+      socket.off('lobbyUpdated');
+    };
+  }, [lobby, username]);
 
   const handleStartGame = () => {
-    // TODO: Start game
-    alert("Starting game");
-  }
+    alert('Starting game');
+  };
 
+  const playerCount = lobbyState?.players.filter((p) => !p.isSpectator).length ?? 0;
 
   return (
-
     <div className="lobby-page-container">
-      {/* Floating shapes */}
       <div className="floating-shapes">
         <div className="shape">🎮</div>
-        <div className="shape">🟨</div> {/* replaced red square with lighter shape */}
+        <div className="shape">🟨</div>
         <div className="shape">🔺</div>
         <div className="shape">🟡</div>
-
-        {/* Gun Target Shapes */}
         <svg className="svg-target" viewBox="0 0 100 100" aria-hidden="true">
           <circle cx="50" cy="50" r="40" stroke="#cc241d" strokeWidth="3" fill="none" />
           <line x1="50" y1="0" x2="50" y2="20" stroke="#cc241d" strokeWidth="2" />
@@ -60,7 +53,6 @@ function LobbyPage() {
           <line x1="0" y1="50" x2="20" y2="50" stroke="#cc241d" strokeWidth="2" />
           <line x1="80" y1="50" x2="100" y2="50" stroke="#cc241d" strokeWidth="2" />
         </svg>
-
         <svg className="svg-target" viewBox="0 0 100 100" aria-hidden="true">
           <circle cx="50" cy="50" r="30" stroke="#98971a" strokeWidth="3" fill="none" />
           <line x1="50" y1="10" x2="50" y2="90" stroke="#98971a" strokeWidth="2" />
@@ -68,38 +60,45 @@ function LobbyPage() {
         </svg>
       </div>
 
-      {/* Laser animations */}
       <div className="laser laser-left-to-right"></div>
       <div className="laser laser-right-to-left"></div>
 
-      <h1>Lobby: { lobbyState?.code }</h1>
+      <h1>Lobby: {lobbyState?.code}</h1>
       <p className="lobby-status">{lobbyState?.state}</p>
       {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-      <h2>Players ({lobbyState?.players.length ?? 0}/20):</h2>
+      <h2>Players ({playerCount}/20):</h2>
       {lobbyState?.players.length === 0 ? (
         <p>No players in this lobby yet.</p>
       ) : (
         <ul className="player-list">
-          {lobbyState?.players.map((player: Player) => (
-            <li key={player.id} className={player.name === username ? 'current-player' : ''}>
-              {player.name} {player.name === username && '(You)'}
-              {player.isHost && lobbyState.players[0] && player.id === lobbyState.players[0].id && ' (Host)'}
+          {lobbyState?.players.map((player) => (
+            <li
+              key={player.id}
+              className={player.name === username ? 'current-player' : ''}
+            >
+              {player.name}
+              {player.isSpectator && ' 🥽 '}
+              {player.name === username && ' (You)'}
+              {player.isHost && ' (Host)'}
             </li>
           ))}
         </ul>
       )}
 
-      {lobbyState && playerState?.isHost && ( 
+      {lobbyState && playerState?.isHost && (
         <button
           onClick={handleStartGame}
           className="start-game-button"
-          disabled={lobbyState.players.length < 4} // Disable if not enough players (mock check)
+          disabled={playerCount < 4}
         >
-          {lobbyState.players.length < 4 ? `Need ${4 - lobbyState.players.length} more players` : 'Start Game'}
+          {playerCount < 4
+            ? `Need ${4 - playerCount} more players`
+            : 'Start Game'}
         </button>
       )}
-      {!(playerState?.isHost ?? false) && ( // This part won't show with isLobbyCreator true, but kept for future
+
+      {!playerState?.isHost && (
         <p className="waiting-message">Waiting for the host to start the game...</p>
       )}
     </div>

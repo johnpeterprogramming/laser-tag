@@ -1,9 +1,11 @@
-export type Player = { id: string, name: string, isHost: boolean };
+export type Player = { id: string, name: string, isHost: boolean,  isSpectator: boolean;};
+
 export type Lobby = {
   code: string,
   players: Player[];
   state: 'waiting' | 'active' | 'ended';
 };
+
 export interface joinOrCreateLobbyResponse {
   success: boolean,
   message: string,
