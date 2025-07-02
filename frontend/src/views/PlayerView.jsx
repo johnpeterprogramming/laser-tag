@@ -68,8 +68,8 @@ export default function PlayerView() {
     const detectFrame = async () => {
       if (videoRef.current && modelLoaded) {
         const predictions = await model.detect(videoRef.current);
-        const segmentedPredictions = await bodyPixModel.segmentPerson(videoRef.current, {multiSegmentation: true, segmentBodyParts: true});
-        console.log("Segmented Predictions:", segmentedPredictions);
+        // const segmentedPredictions = await bodyPixModel.segmentPerson(videoRef.current, {multiSegmentation: true, segmentBodyParts: true});
+        // console.log("Segmented Predictions:", segmentedPredictions);
         predictionsRef.current = predictions;
         if (canvasRef.current) {
           canvas(predictions);
@@ -117,67 +117,182 @@ export default function PlayerView() {
     return results
   }
 
+  // async function segmentShirtColor(video, bbox) {
+  //   if (!bodyPixNet || !video || !bbox) return null;
+
+  //   const SMALL_WIDTH = 350;
+  //   const SMALL_HEIGHT = 350;
+    
+  //   const [x, y, width, height] = bbox;
+    
+  //   // Define crop margins (adjust these values as needed)
+  //   const CROP_MARGIN_X = width * 0.2;  // Crop 10% from left/right edges
+  //   const CROP_MARGIN_Y = height * 0.2; // Crop 10% from top/bottom edges
+    
+  //   // Calculate cropped region
+  //   const croppedX = x + CROP_MARGIN_X;
+  //   const croppedY = y + CROP_MARGIN_Y;
+  //   const croppedWidth = width - (2 * CROP_MARGIN_X);
+  //   const croppedHeight = height - (2 * CROP_MARGIN_Y);
+    
+  //   const tempCanvas = document.createElement("canvas");
+  //   tempCanvas.width = SMALL_WIDTH;
+  //   tempCanvas.height = SMALL_HEIGHT;
+  //   const tempCtx = tempCanvas.getContext("2d");
+    
+  //   // Draw the cropped bounding box region, scaled down
+  //   tempCtx.drawImage(
+  //     video, // source
+  //     croppedX, croppedY, croppedWidth, croppedHeight, // cropped source rect
+  //     0, 0, SMALL_WIDTH, SMALL_HEIGHT                   // destination rect
+  //   );
+
+  //   // Rest of your segmentation code...
+  //   const segmentation = await bodyPixNet.segmentPersonParts(tempCanvas, {
+  //     internalResolution: "low",
+  //     segmentationThreshold: 0.2,
+  //     scoreThreshold: 0.2,
+  //     // multiSegmentation: true, 
+  //     segmentBodyParts: true,
+  //   });
+
+  //   // Process results...
+  //   console.log("Segmentation result:", segmentation);
+  //       // Parts 12, 13 = torso
+  //   const { data: partMap } = segmentation;
+  //   console.log("Part map:", partMap);
+  //   const uniqueParts = [...new Set(partMap)];
+  //     console.log("Detected body parts:", uniqueParts);
+  //     console.log("Looking for torso parts: 12 (torso_front), 13 (torso_back)");
+
+  //   const imgData = tempCtx.getImageData(0, 0, width, height);
+  //   let r = 0, g = 0, b = 0, count = 0;
+  //   for (let i = 0; i < partMap.length; i++) {
+  //     if (partMap[i] === 12 || partMap[i] === 13 || partMap[i] === 2 || partMap[i] === 3 || partMap[i] === 4 || partMap[i] === 5) { // torso_front, torso_back, or torso_side
+  //       r += imgData.data[i * 4];
+  //       g += imgData.data[i * 4 + 1];
+  //       b += imgData.data[i * 4 + 2];
+  //       count++;
+  //     }
+  //   }
+  //   if (count > 0) {
+  //     return {
+  //       r: Math.round(r / count),
+  //       g: Math.round(g / count),
+  //       b: Math.round(b / count)
+  //     };
+  //   } else {
+  //     return null;
+  //   }
+  // }
+
   async function segmentShirtColor(video, bbox) {
-    if (!bodyPixNet || !video || !bbox) return null;
+  if (!bodyPixNet || !video || !bbox) return null;
 
-    const SMALL_WIDTH = 160;
-    const SMALL_HEIGHT = 120;
-    
-    const [x, y, width, height] = bbox;
-    
-    // Define crop margins (adjust these values as needed)
-    const CROP_MARGIN_X = width * 0.1;  // Crop 10% from left/right edges
-    const CROP_MARGIN_Y = height * 0.1; // Crop 10% from top/bottom edges
-    
-    // Calculate cropped region
-    const croppedX = x + CROP_MARGIN_X;
-    const croppedY = y + CROP_MARGIN_Y;
-    const croppedWidth = width - (2 * CROP_MARGIN_X);
-    const croppedHeight = height - (2 * CROP_MARGIN_Y);
-    
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = SMALL_WIDTH;
-    tempCanvas.height = SMALL_HEIGHT;
-    const tempCtx = tempCanvas.getContext("2d");
-    
-    // Draw the cropped bounding box region, scaled down
-    tempCtx.drawImage(
-      video, // source
-      croppedX, croppedY, croppedWidth, croppedHeight, // cropped source rect
-      0, 0, SMALL_WIDTH, SMALL_HEIGHT                   // destination rect
-    );
+  const SMALL_WIDTH = 350;
+  const SMALL_HEIGHT = 350;
+  
+  const [x, y, width, height] = bbox;
+  
+  // Define crop margins (adjust these values as needed)
+  const CROP_MARGIN_X = width * 0.2;  // Crop 20% from left/right edges
+  const CROP_MARGIN_Y = height * 0.2; // Crop 20% from top/bottom edges
+  
+  // Calculate cropped region
+  const croppedX = x + CROP_MARGIN_X;
+  const croppedY = y + CROP_MARGIN_Y;
+  const croppedWidth = width - (2 * CROP_MARGIN_X);
+  const croppedHeight = height - (2 * CROP_MARGIN_Y);
+  
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = SMALL_WIDTH;
+  tempCanvas.height = SMALL_HEIGHT;
+  const tempCtx = tempCanvas.getContext("2d");
+  
+  // Draw the cropped bounding box region, scaled down
+  tempCtx.drawImage(
+    video, // source
+    croppedX, croppedY, croppedWidth, croppedHeight, // cropped source rect
+    0, 0, SMALL_WIDTH, SMALL_HEIGHT                   // destination rect
+  );
 
-    // Rest of your segmentation code...
-    const segmentation = await bodyPixNet.segmentPersonParts(tempCanvas, {
-      internalResolution: "low",
-      segmentationThreshold: 0.7,
-    });
+  // Rest of your segmentation code...
+  const segmentation = await bodyPixNet.segmentPersonParts(tempCanvas, {
+    internalResolution: "low",
+    segmentationThreshold: 0.2,
+    scoreThreshold: 0.2,
+    segmentBodyParts: true,
+  });
 
-    // Process results...
-    console.log("Segmentation result:", segmentation);
-        // Parts 12, 13 = torso
-    const { data: partMap } = segmentation;
-    console.log("Part map:", partMap);
-    const imgData = tempCtx.getImageData(0, 0, width, height);
-    let r = 0, g = 0, b = 0, count = 0;
-    for (let i = 0; i < partMap.length; i++) {
-      if (partMap[i] === 12 || partMap[i] === 13 ) {
-        r += imgData.data[i * 4];
-        g += imgData.data[i * 4 + 1];
-        b += imgData.data[i * 4 + 2];
-        count++;
+  // Process results...
+  console.log("Segmentation result:", segmentation);
+  // Parts 12, 13 = torso
+  const { data: partMap } = segmentation;
+  console.log("Part map:", partMap);
+  const uniqueParts = [...new Set(partMap)];
+  console.log("Detected body parts:", uniqueParts);
+  console.log("Looking for torso parts: 12 (torso_front), 13 (torso_back)");
+
+  const imgData = tempCtx.getImageData(0, 0, SMALL_WIDTH, SMALL_HEIGHT);
+  
+  // Use Map to count color frequencies
+  const colorFrequency = new Map();
+  
+  for (let i = 0; i < partMap.length; i++) {
+    if (partMap[i] === 12 || partMap[i] === 13 || partMap[i] === 2 || partMap[i] === 3 || partMap[i] === 4 || partMap[i] === 5) {
+      // Get pixel coordinates
+      const segX = i % segmentation.width;
+      const segY = Math.floor(i / segmentation.width);
+      
+      // Scale to canvas coordinates
+      const canvasX = Math.floor((segX / segmentation.width) * SMALL_WIDTH);
+      const canvasY = Math.floor((segY / segmentation.height) * SMALL_HEIGHT);
+      
+      const pixelIndex = (canvasY * SMALL_WIDTH + canvasX) * 4;
+      
+      if (pixelIndex < imgData.data.length) {
+        const r = imgData.data[pixelIndex];
+        const g = imgData.data[pixelIndex + 1];
+        const b = imgData.data[pixelIndex + 2];
+        
+        // Quantize colors to reduce noise (group similar colors together)
+        const quantizedR = Math.round(r / 16) * 16; // Reduce to 16 levels
+        const quantizedG = Math.round(g / 16) * 16;
+        const quantizedB = Math.round(b / 16) * 16;
+        
+        const colorKey = `${quantizedR},${quantizedG},${quantizedB}`;
+        
+        if (colorFrequency.has(colorKey)) {
+          colorFrequency.set(colorKey, colorFrequency.get(colorKey) + 1);
+        } else {
+          colorFrequency.set(colorKey, 1);
+        }
       }
     }
-    if (count > 0) {
-      return {
-        r: Math.round(r / count),
-        g: Math.round(g / count),
-        b: Math.round(b / count)
-      };
-    } else {
-      return null;
-    }
   }
+  
+  if (colorFrequency.size > 0) {
+    // Find the mode (most frequent color)
+    let maxCount = 0;
+    let modeColor = null;
+    
+    for (const [colorKey, count] of colorFrequency.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        const [r, g, b] = colorKey.split(',').map(Number);
+        modeColor = { r, g, b };
+      }
+    }
+    
+    console.log(`Mode color found with ${maxCount} occurrences:`, modeColor);
+    console.log(`Total unique colors: ${colorFrequency.size}`);
+    
+    return modeColor;
+  } else {
+    console.log("No torso pixels found");
+    return null;
+  }
+}
 
   
 
