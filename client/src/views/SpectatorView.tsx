@@ -23,12 +23,16 @@ interface LocationState {
 
 export default function SpectatorView() {
     const location = useLocation();
+    // Filter out spectators from the initial lobby state
     const { lobby } = (location.state as LocationState) || {};
-    const [currentLobby, setCurrentLobby] = useState<Lobby | undefined>(lobby);
+    const filteredLobby = lobby ? { ...lobby, players: lobby.players.filter((p: any) => !p.isSpectator) } : undefined;
+    const [currentLobby, setCurrentLobby] = useState<Lobby | undefined>(filteredLobby);
     useEffect(() => {
         if (lobby) {
             socket.on("lobbyUpdated", (updatedLobby: Lobby) => {
-                setCurrentLobby(updatedLobby);
+                // Always filter out spectators from the updated lobby
+                const filtered = { ...updatedLobby, players: updatedLobby.players.filter((p: any) => !p.isSpectator) };
+                setCurrentLobby(filtered);
             });
             return () => {
                 socket.off("lobbyUpdated");
