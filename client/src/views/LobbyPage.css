@@ -2,8 +2,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 100vh;
+  max-height: 100vh;
   background-color: #fbf1c7;
   color: #3c3836;
   font-family: "Inter", Arial, sans-serif;
@@ -11,13 +12,36 @@
   text-align: center;
   border-radius: 10px;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.lobby-page-container>.waiting-message {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin-top: 16px;
+  z-index: 10;
+  background: #fbf1c7;
+  padding-bottom: 16px;
 }
 
 .lobby-page-container h1 {
   margin-bottom: 20px;
   color: #458588;
   font-size: 2.5em;
+}
+
+.player-list-scroll-wrapper {
+  width: 80%;
+  max-width: 300px;
+  max-height: 300px;
+  margin: 20px 0;
+  overflow-y: auto;
+  background: none;
+  border-radius: 8px;
 }
 
 .lobby-status {
@@ -29,9 +53,8 @@
 .player-list {
   list-style: none;
   padding: 0;
-  margin: 20px 0;
-  width: 80%;
-  max-width: 300px;
+  margin: 0;
+  width: 100%;
   background-color: #ebdbb2;
   border-radius: 8px;
   overflow: hidden;
@@ -116,16 +139,19 @@
   left: 15%;
   animation-delay: 0s;
 }
+
 .shape:nth-child(2) {
   top: 60%;
   left: 80%;
   animation-delay: 1s;
 }
+
 .shape:nth-child(3) {
   top: 35%;
   left: 50%;
   animation-delay: 2s;
 }
+
 .shape:nth-child(4) {
   top: 80%;
   left: 10%;
@@ -230,7 +256,7 @@
   background-position: 100% 0%;
 }
 
-.player-list li .health-fill[style*="75%"], 
+.player-list li .health-fill[style*="75%"],
 .player-list li .health-fill[style*="50%"] {
   background-position: 50% 0%;
 }
@@ -277,9 +303,20 @@
 /* Animations */
 
 @keyframes floatShape {
-  0% { transform: translateY(0); opacity: 0.1; }
-  50% { transform: translateY(-12px); opacity: 0.2; }
-  100% { transform: translateY(0); opacity: 0.1; }
+  0% {
+    transform: translateY(0);
+    opacity: 0.1;
+  }
+
+  50% {
+    transform: translateY(-12px);
+    opacity: 0.2;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 0.1;
+  }
 }
 
 @keyframes laserLeftToRight {
@@ -287,13 +324,16 @@
     opacity: 0;
     left: -120px;
   }
+
   10% {
     opacity: 0.4;
   }
+
   90% {
     opacity: 0.4;
     left: 100%;
   }
+
   100% {
     opacity: 0;
     left: 100%;
@@ -305,13 +345,16 @@
     opacity: 0;
     right: -120px;
   }
+
   10% {
     opacity: 0.4;
   }
+
   90% {
     opacity: 0.4;
     right: 100%;
   }
+
   100% {
     opacity: 0;
     right: 100%;
