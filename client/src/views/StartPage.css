@@ -206,14 +206,14 @@
 
 .button-group {
   display: flex;
-  gap: 20px;
+  flex-direction: column;
+  gap: 15px;
   margin-top: 40px;
   width: 100%;
 }
 
 .button-group button {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   padding: 20px 25px;
   border: none;
   border-radius: 15px;
@@ -234,8 +234,6 @@
     0 0 20px rgba(0, 255, 255, 0.4),
     inset 0 0 20px rgba(255, 255, 255, 0.1);
   box-sizing: border-box;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .button-group button::before {
@@ -493,7 +491,6 @@
   }
 
   .button-group {
-    flex-direction: column;
     gap: 12px;
     margin-top: 30px;
   }
@@ -551,7 +548,6 @@
   }
 
   .button-group {
-    flex-direction: column;
     gap: 10px;
     margin-top: 25px;
   }
