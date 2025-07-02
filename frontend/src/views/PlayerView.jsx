@@ -113,14 +113,54 @@ export default function PlayerView() {
     return results
   }
 
+  async function segmentShirtColor(video, bbox) {
+    if (!bodyPixNet || !video || !bbox) return null;
+
+    const SMALL_WIDTH = 160;
+    const SMALL_HEIGHT = 120;
+    
+    const [x, y, width, height] = bbox;
+    
+    // Define crop margins (adjust these values as needed)
+    const CROP_MARGIN_X = width * 0.1;  // Crop 10% from left/right edges
+    const CROP_MARGIN_Y = height * 0.1; // Crop 10% from top/bottom edges
+    
+    // Calculate cropped region
+    const croppedX = x + CROP_MARGIN_X;
+    const croppedY = y + CROP_MARGIN_Y;
+    const croppedWidth = width - (2 * CROP_MARGIN_X);
+    const croppedHeight = height - (2 * CROP_MARGIN_Y);
+    
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = SMALL_WIDTH;
+    tempCanvas.height = SMALL_HEIGHT;
+    const tempCtx = tempCanvas.getContext("2d");
+    
+    // Draw the cropped bounding box region, scaled down
+    tempCtx.drawImage(
+      video, // source
+      croppedX, croppedY, croppedWidth, croppedHeight, // cropped source rect
+      0, 0, SMALL_WIDTH, SMALL_HEIGHT                   // destination rect
+    );
+
+    // Rest of your segmentation code...
+    const segmentation = await bodyPixNet.segmentPersonParts(tempCanvas, {
+      internalResolution: "low",
+      segmentationThreshold: 0.7,
+    });
+
+    // Process results...
+  }
+
   
 
-  const handleShoot = () => {
+  const handleShoot = async () => {
     setRecoil(true);
     const targets = getTargetPrediction(predictionsRef.current);
     if (targets.length > 0) {
       for (const target of targets) {
         console.log("Hit target:", target);
+        const color = await segmentShirtColor(videoRef.current, target.bbox);
         // Here you can handle the hit logic, e.g., send a hit event to the server
       }
     }
