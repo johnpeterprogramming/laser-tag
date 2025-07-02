@@ -24,11 +24,13 @@
     object-fit: cover;
     object-position: center center;
     z-index: 1;
+    user-select: none;
 }
 
 .player-canvas {
     z-index: 2; /* On top of video */
     pointer-events: none; /* Let clicks pass through */
+    user-select: none;
 }
 
 .shoot-button {
