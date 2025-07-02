@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { socket } from "../socket";
 import "./SpectatorView.css";
@@ -8,6 +8,11 @@ interface Player {
     name: string;
     health: number;
     maxHealth?: number;
+    colour?: string;
+    isSpectator?: boolean;
+    r?: number;
+    g?: number;
+    b?: number;
 }
 
 interface Lobby {
@@ -21,78 +26,20 @@ interface LocationState {
 }
 
 export default function SpectatorView() {
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const [error, setError] = useState<string | null>(null);
     const location = useLocation();
     const { lobby } = (location.state as LocationState) || {};
     const [currentLobby, setCurrentLobby] = useState<Lobby | undefined>(lobby);
-    const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-
-    // Select first player by default
-    useEffect(() => {
-        if (currentLobby?.players && currentLobby.players.length > 0 && !selectedPlayer) {
-            setSelectedPlayer(currentLobby.players[0]);
-        }
-    }, [currentLobby, selectedPlayer]);
-
-    // Listen for lobby updates
     useEffect(() => {
         if (lobby) {
             socket.on("lobbyUpdated", (updatedLobby: Lobby) => {
                 setCurrentLobby(updatedLobby);
-                // Update selected player if they still exist
-                if (selectedPlayer) {
-                    const updatedPlayer = updatedLobby.players.find(p => p.id === selectedPlayer.id);
-                    if (updatedPlayer) {
-                        setSelectedPlayer(updatedPlayer);
-                    } else {
-                        // Player left, select first available player
-                        setSelectedPlayer(updatedLobby.players[0] || null);
-                    }
-                }
             });
-
             return () => {
                 socket.off("lobbyUpdated");
+                socket.off("gameEnded");
             };
         }
-    }, [lobby, selectedPlayer]);
-
-    // Player details from selected player or default
-    const player = selectedPlayer || {
-        name: "No Player Selected",
-        health: 0,
-        maxHealth: 100,
-        id: ""
-    };
-
-    // Get camera stream
-    useEffect(() => {
-        let activeStream: MediaStream;
-
-        const enableCamera = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "environment" },
-                });
-                activeStream = stream;
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-            } catch (err) {
-                console.error("Camera error:", err);
-                setError("Unable to access camera. Please enable it in your browser.");
-            }
-        };
-
-        enableCamera();
-
-        return () => {
-            if (activeStream) {
-                activeStream.getTracks().forEach((track) => track.stop());
-            }
-        };
-    }, []);
+    }, [lobby]);
 
     // Fix for 100vh on mobile
     useEffect(() => {
@@ -100,68 +47,89 @@ export default function SpectatorView() {
             const vh = window.innerHeight * 0.01;
             document.documentElement.style.setProperty("--vh", `${vh}px`);
         };
-
         setVH();
         window.addEventListener("resize", setVH);
         return () => window.removeEventListener("resize", setVH);
     }, []);
 
     return (
-        <div className="spectator-container">
-            <h1 className="title">Spectator View</h1>
-
-            {currentLobby?.players && currentLobby.players.length > 0 && (
-                <div className="player-selector">
-                    <label>Watching: </label>
-                    <select
-                        value={selectedPlayer?.id || ""}
-                        onChange={(e) => {
-                            const playerId = e.target.value;
-                            const player = currentLobby?.players?.find(p => p.id === playerId);
-                            setSelectedPlayer(player || null);
-                        }}
-                    >
-                        {currentLobby.players.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                    </select>
-                </div>
-            )}
-
-            {error ? (
-                <div className="error-message">{error}</div>
-            ) : (
-                <div className="video-wrapper">
-                    <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="camera-video"
-                    />
-                    <div className="overlay-info">
-                        <div className="health-bar-container">
-                            <div className="health-labels">
-                                <span>Health</span>
-                                <span>{player.health}/{player.maxHealth || 100}</span>
+        <div className="spectator-dashboard-container">
+            <header className="dashboard-header live-header">
+                <h1>
+                  <span className="live-dot"></span>
+                  <span className="live-text">LIVE</span>
+                  <span className="live-title">Spectator Dashboard</span>
+                </h1>
+                <div className="lobby-state">Lobby State: <span>{currentLobby?.state || "Unknown"}</span></div>
+            </header>
+            <main className="dashboard-main-grid">
+                {currentLobby?.players && currentLobby.players.length > 0 ? (
+                    currentLobby.players
+                        .filter((p: any) => !p.isSpectator) // Filter out spectators
+                        .map((p: any) => {
+                        // Use RGB color for avatar border and color dot
+                        const rgb = (typeof p.r === 'number' && typeof p.g === 'number' && typeof p.b === 'number')
+                            ? `rgb(${p.r},${p.g},${p.b})`
+                            : '#b8bb26';
+                        return (
+                            <div className="dashboard-player-card" key={p.id}>
+                                <div className="player-avatar-row">
+                                    <img
+                                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=222b3a&color=fff&size=48`}
+                                        alt={p.name}
+                                        className="player-avatar"
+                                        style={{ border: `2px solid ${rgb}` }}
+                                    />
+                                    <span className="player-name">{p.name}</span>
+                                </div>
+                                <div className="player-info-row">
+                                    <span className="player-colour-label">Colour</span>
+                                    <span className="player-colour-dot" style={{ background: rgb }}></span>
+                                </div>
+                                <div className="player-info-row" style={{ flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+                                    <span className="player-health-label">Health</span>
+                                    <div className="health-bar-spectator" style={{ width: '100%', maxWidth: 120, height: 14, background: '#d5c4a1', borderRadius: 8, marginTop: 4, marginBottom: 2, boxShadow: 'inset 0 2px 4px rgba(60,56,54,0.18)' }}>
+                                        <div
+                                            className="health-bar-fill-spectator"
+                                            style={{
+                                                width: `${(p.health / (p.maxHealth || 100)) * 100}%`,
+                                                height: '100%',
+                                                background: '#cc241d',
+                                                borderRadius: 8,
+                                                transition: 'width 0.3s',
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <span className="player-health-value" style={{ color: '#cc241d', fontWeight: 'bold', fontSize: '0.98em' }}>{p.health}{typeof p.maxHealth === 'number' ? `/${p.maxHealth}` : ''}</span>
+                                </div>
+                                {p.health === 0 && (
+                                    <div className="player-state-row" style={{ marginTop: 12, width: '100%', display: 'flex', justifyContent: 'center' }}>
+                                        <span className="player-state-label" style={{
+                                            background: '#cc241d',
+                                            color: '#fff',
+                                            borderRadius: 8,
+                                            padding: '4px 16px',
+                                            fontWeight: 700,
+                                            fontSize: '1.05em',
+                                            letterSpacing: 1,
+                                            boxShadow: '0 0 8px #cc241d',
+                                            border: '2px solid #cc241d',
+                                            textTransform: 'uppercase',
+                                            transition: 'all 0.2s',
+                                        }}>Eliminated</span>
+                                    </div>
+                                )}
                             </div>
-                            <div className="health-bar-track">
-                                <div
-                                    className="health-bar-fill"
-                                    style={{ width: `${((player.health || 0) / (player.maxHealth || 100)) * 100}%` }}
-                                ></div>
-                            </div>
-                        </div>
-
-                        <div className="player-details">
-                            <p className="player-name">{player.name}</p>
-                            <p className="player-status">
-                                Status: {player.health > 0 ? "Alive" : "Eliminated"}
-                            </p>
-                        </div>
+                        );
+                    })
+                ) : (
+                    <div style={{ color: '#b57614', fontWeight: 500, textAlign: 'center', gridColumn: '1/-1' }}>
+                        {currentLobby?.players && currentLobby.players.length > 0 
+                            ? "No active players (only spectators in lobby)" 
+                            : "No players in lobby"}
                     </div>
-                </div>
-            )}
+                )}
+            </main>
         </div>
     );
 }

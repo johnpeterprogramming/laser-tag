@@ -240,6 +240,22 @@ io.on("connection", (socket: Socket) => {
             isKilled: target.health === 0,
         });
 
+        // Check for winner after damage is applied
+        const alivePlayers = lobby.players.filter(p => !p.isSpectator && p.health > 0);
+        if (alivePlayers.length === 1 && lobby.state === "active") {
+            // Game over - we have a winner!
+            lobby.state = "ended";
+            const winner = alivePlayers[0];
+
+            console.log(`Game ended! Winner: ${winner.name} in lobby ${lobbyCode}`);
+
+            // Notify all players about the winner
+            io.to(lobbyCode).emit("gameEnded", {
+                winner: winner,
+                lobbyCode: lobbyCode
+            });
+        }
+
         // Update lobby state
         io.to(lobbyCode).emit("lobbyUpdated", lobby);
     });

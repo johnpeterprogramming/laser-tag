@@ -399,3 +399,107 @@
         text-shadow: 0 0 20px rgba(204, 36, 29, 1), 0 0 30px rgba(204, 36, 29, 0.6);
     }
 }
+
+/* Winner screen overlay */
+.winner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    animation: winnerFadeIn 0.8s ease-in;
+}
+
+.winner-content {
+    text-align: center;
+    color: white;
+    font-family: "Inter", Arial, sans-serif;
+}
+
+.winner-icon {
+    font-size: 8rem;
+    margin-bottom: 1rem;
+    animation: trophySpin 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.9));
+}
+
+.winner-title {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #d79921;
+    margin: 0 0 1rem 0;
+    text-shadow: 0 0 15px rgba(215, 153, 33, 1);
+    animation: winnerTitleGlow 2s ease-in-out infinite alternate;
+}
+
+.winner-subtitle {
+    font-size: 1.5rem;
+    color: #fbf1c7;
+    margin: 0 0 2rem 0;
+    opacity: 0.9;
+    max-width: 600px;
+    line-height: 1.4;
+}
+
+.winner-button {
+    background: linear-gradient(45deg, #d79921, #b8bb26);
+    color: #3c3836;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(215, 153, 33, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.winner-button:hover {
+    background: linear-gradient(45deg, #b8bb26, #98971a);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(215, 153, 33, 0.6);
+}
+
+@keyframes winnerFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) rotateY(-20deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotateY(0deg);
+    }
+}
+
+@keyframes trophySpin {
+    0%, 80%, 100% {
+        transform: rotateY(0deg) scale(1);
+        filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.9));
+    }
+    40% {
+        transform: rotateY(360deg) scale(1.2);
+        filter: drop-shadow(0 0 40px rgba(255, 215, 0, 1));
+    }
+}
+
+@keyframes winnerTitleGlow {
+    0% {
+        text-shadow: 0 0 15px rgba(215, 153, 33, 1);
+        transform: scale(1);
+    }
+    100% {
+        text-shadow: 
+            0 0 25px rgba(215, 153, 33, 1), 
+            0 0 35px rgba(215, 153, 33, 0.8),
+            0 0 45px rgba(255, 215, 0, 0.6);
+        transform: scale(1.05);
+    }
+}

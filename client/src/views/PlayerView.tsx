@@ -36,14 +36,18 @@ export default function PlayerView() {
     const [particles, setParticles] = useState<Particle[]>([]);
     const [bodyPixNet, setBodyPixNet] = useState<bodyPix.BodyPix | null>(null);
     const predictionsRef = useRef<cocoSsd.DetectedObject[]>([]);
+    const [cocoModel, setCocoModel] = useState<cocoSsd.ObjectDetection | null>(null);
 
     const [health, setHealth] = useState<number>(100);
     const [maxHealth] = useState<number>(100);
-    const [cameraRequested, setCameraRequested] = useState<boolean>(false); // Don't auto-start on mobile
-    const [cameraLoading, setCameraLoading] = useState<boolean>(false); // Don't start loading immediately
+    const [cameraRequested, setCameraRequested] = useState<boolean>(false);
+    const [cameraLoading, setCameraLoading] = useState<boolean>(false);
+    const [modelsLoaded, setModelsLoaded] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [recoil, setRecoil] = useState<boolean>(false);
     const [isDead, setIsDead] = useState<boolean>(false); // Track death state
+    const [gameEnded, setGameEnded] = useState<boolean>(false); // Track if game has ended
+    const [winner, setWinner] = useState<Player | null>(null); // Track winner
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -51,43 +55,47 @@ export default function PlayerView() {
     const lobbyCode = lobby?.code || "";
     const [currentLobby, setCurrentLobby] = useState<Lobby | undefined>(lobby);
 
-
-    // Debug logging
-    // console.log('PlayerView render:', { username, lobby, lobbyCode, currentLobby });
-
-    // Check if we're on mobile and require user interaction for camera
+    // Load models before camera initialization
     useEffect(() => {
-        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const loadModels = async () => {
+            try {
+                console.log("🤖 Loading AI models...");
 
-        if (isMobile) {
-            console.log("📱 Mobile device detected, waiting for user interaction");
-            // Don't auto-start camera on mobile - wait for user tap
-        } else {
-            console.log("💻 Desktop detected, auto-starting camera");
-            initCamera();
-        }
+                const [cocoModelResult, bodyPixModelResult] = await Promise.all([
+                    cocoSsd.load(),
+                    bodyPix.load()
+                ]);
+
+                setCocoModel(cocoModelResult);
+                setBodyPixNet(bodyPixModelResult);
+                setModelsLoaded(true);
+
+                console.log("✅ AI models loaded successfully");
+            } catch (error) {
+                console.error("❌ Error loading AI models:", error);
+                setModelsLoaded(false);
+            }
+        };
+
+        loadModels();
     }, []);
 
-    // Handle user interaction to start camera on mobile
-    const handleUserInteraction = () => {
-        if (!cameraRequested && !cameraLoading) {
-            console.log("👆 User interaction detected, starting camera");
+    // Initialize camera after models are loaded
+    useEffect(() => {
+        if (modelsLoaded) {
             initCamera();
         }
-    };
+    }, [modelsLoaded]);
 
-    // Camera initialization function (automatically called on mount)
+    // Camera initialization function (called after models are loaded)
     const initCamera = async () => {
-        if (cameraRequested && !cameraLoading) return; // Prevent multiple requests
+        if (cameraRequested || !modelsLoaded || !cocoModel || !bodyPixNet) return; // Prevent multiple requests and ensure models are loaded
 
-        console.log("🎯 Starting automatic camra initialization");
+        console.log("🎯 Starting camera initialization with pre-loaded models");
         setCameraRequested(true);
         setCameraLoading(true);
 
-        let model: cocoSsd.ObjectDetection;
-        let modelLoaded = false;
         let stream: MediaStream;
-        // let animationId: number;
         let cameraTimeout: NodeJS.Timeout;
 
         // Set a timeout to clear camera loading state if camera/model fails
@@ -158,31 +166,10 @@ export default function PlayerView() {
             });
         };
 
-        const loadModel = async () => {
-            try {
-                console.log("Loading TensorFlow model...");
-                model = await cocoSsd.load();
-
-                const bpNet = await bodyPix.load();
-                modelLoaded = true;
-                setBodyPixNet(bpNet);
-
-                console.log("TensorFlow model loaded successfully");
-                // Start detection loop only if video is ready
-                if (videoRef.current && videoRef.current.readyState >= 2) {
-                    detectFrame();
-                }
-            } catch (error) {
-                console.error("Error loading TensorFlow model:", error);
-                // Continue without model detection
-                modelLoaded = false;
-            }
-        };
-
         const detectFrame = async () => {
-            if (videoRef.current && modelLoaded && videoRef.current.readyState >= 2) {
+            if (videoRef.current && cocoModel && videoRef.current.readyState >= 2) {
                 try {
-                    const predictions = await model.detect(videoRef.current);
+                    const predictions = await cocoModel.detect(videoRef.current);
                     predictionsRef.current = predictions;
 
                     // Could be unnecessary, but fine for now
@@ -219,7 +206,11 @@ export default function PlayerView() {
                 );
                 clearTimeout(cameraTimeout);
                 setCameraLoading(false);
-                loadModel();
+
+                // Start detection loop since models are already loaded
+                if (videoRef.current && videoRef.current.readyState >= 2) {
+                    detectFrame();
+                }
                 return true;
             }
             return false;
@@ -230,22 +221,18 @@ export default function PlayerView() {
             console.log("📱 User agent:", navigator.userAgent);
             console.log("📱 Is Android:", /Android/i.test(navigator.userAgent));
 
-            // Check if we're on Android
-            const isAndroid = /Android/i.test(navigator.userAgent);
-            if (isAndroid) {
-                console.log("📱 Detected Android device, using Android-optimized settings");
-            }
-
             const cameraConfigs = [
-                // Start with more basic configs for Android compatibility
                 {
                     video: {
                         facingMode: "environment",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
                     },
                 },
                 {
                     video: {
-                        facingMode: { exact: "environment" },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
                     },
                 },
                 {
@@ -283,13 +270,6 @@ export default function PlayerView() {
             ];
             let streamResult: MediaStream | null = null;
 
-
-            if (videoRef.current && videoRef.current.srcObject) {
-                console.log("there were ongoing media tracks. Closing!");
-                const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-                tracks.forEach(track => track.stop());
-                videoRef.current.srcObject = null;
-            }
 
             let lastError: Error | null = null;
             for (const config of cameraConfigs) {
@@ -563,14 +543,22 @@ export default function PlayerView() {
             }
         };
 
+        const handleGameEnded = (data: { winner: Player; lobbyCode: string }) => {
+            console.log("Game ended! Winner:", data.winner.name);
+            setGameEnded(true);
+            setWinner(data.winner);
+        };
+
         socket.on("playerHit", handlePlayerHit);
         socket.on("playerHealed", handlePlayerHealed);
         socket.on("lobbyUpdated", handleLobbyUpdated);
+        socket.on("gameEnded", handleGameEnded);
 
         return () => {
             socket.off("playerHit", handlePlayerHit);
             socket.off("playerHealed", handlePlayerHealed);
             socket.off("lobbyUpdated", handleLobbyUpdated);
+            socket.off("gameEnded", handleGameEnded);
         };
     }, []);
 
@@ -609,6 +597,10 @@ export default function PlayerView() {
 
         let closestPlayer: Player | null = null;
         let minDistance = Infinity;
+        
+        // Maximum allowed color distance for a valid match
+        // Lower values = more strict matching, higher values = more lenient
+        const MAX_COLOR_DISTANCE = 100; // Adjust this value based on testing
 
         const otherPlayers = currentLobby.players;
         // Filter out the current player (can't shoot yourself)
@@ -634,7 +626,8 @@ export default function PlayerView() {
                     `(detected: rgb(${detectedRGB.r},${detectedRGB.g},${detectedRGB.b}), player: rgb(${playerColor.r},${playerColor.g},${playerColor.b}))`,
                 );
 
-                if (distance < minDistance) {
+                // Only consider this player if the distance is within acceptable range
+                if (distance < minDistance && distance <= MAX_COLOR_DISTANCE) {
                     minDistance = distance;
                     closestPlayer = player;
                 }
@@ -647,7 +640,7 @@ export default function PlayerView() {
             );
         } else {
             console.log(
-                `🎯 No color match found for detected color: ${detectedColor}`,
+                `🎯 No valid color match found for detected color: ${detectedColor} (all distances exceeded ${MAX_COLOR_DISTANCE})`,
             );
         }
 
@@ -802,6 +795,9 @@ export default function PlayerView() {
     }
 
     const handleShoot = async () => {
+        // Don't allow shooting if player is dead or game has ended
+        if (isDead || gameEnded) return;
+
         setRecoil(true);
         setTimeout(() => setRecoil(false), 100); // reset after 100ms
 
@@ -856,7 +852,7 @@ export default function PlayerView() {
     return (
         <div
             className="player-wrapper"
-            onClick={cameraRequested ? handleShoot : handleUserInteraction}
+            onClick={handleShoot}
         >
             {/* Health Bar */}
             <div className="player-health-overlay">
@@ -915,32 +911,7 @@ export default function PlayerView() {
             ))}
 
             {/* Camera status indicator - show loading or error states */}
-            {!cameraRequested && !error && (
-                <div
-                    style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        color: "white",
-                        textAlign: "center",
-                        zIndex: 5,
-                        background: "rgba(0,0,0,0.8)",
-                        padding: "20px",
-                        borderRadius: "10px",
-                        cursor: "pointer",
-                    }}
-                    onClick={handleUserInteraction}
-                >
-                    <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📱</div>
-                    <div style={{ fontSize: "1.2rem", marginBottom: "0.5rem" }}>Tap to Start Camera</div>
-                    <div style={{ fontSize: "0.9rem", opacity: 0.8 }}>
-                        Camera access required for AR targeting
-                    </div>
-                </div>
-            )}
-
-            {(cameraLoading || error) && !videoRef.current?.srcObject && (
+            {((!modelsLoaded || cameraLoading) || error) && !videoRef.current?.srcObject && (
                 <div
                     style={{
                         position: "absolute",
@@ -973,6 +944,13 @@ export default function PlayerView() {
                                 Try Again
                             </button>
                         </>
+                    ) : !modelsLoaded ? (
+                        <>
+                            <div>🤖 Loading AI Models...</div>
+                            <div style={{ fontSize: "0.8rem", marginTop: "10px" }}>
+                                Setting up object detection and color recognition
+                            </div>
+                        </>
                     ) : (
                         <>
                             <div>📹 Setting up Camera...</div>
@@ -985,12 +963,38 @@ export default function PlayerView() {
             )}
 
             {/* Death Screen Overlay */}
-            {isDead && (
+            {isDead && !gameEnded && (
                 <div className="death-overlay">
                     <div className="death-content">
                         <div className="skull-icon">💀</div>
                         <h1 className="death-title">YOU DIED</h1>
                         <p className="death-subtitle">Game Over</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Winner Screen Overlay */}
+            {gameEnded && (
+                <div className="winner-overlay">
+                    <div className="winner-content">
+                        <div className="winner-icon">🏆</div>
+                        <h1 className="winner-title">
+                            {winner?.id === socket.id ? "VICTORY!" : `${winner?.name} WINS!`}
+                        </h1>
+                        <p className="winner-subtitle">
+                            {winner?.id === socket.id
+                                ? "Congratulations! You are the last player standing!"
+                                : "Better luck next time!"}
+                        </p>
+                        <button
+                            className="winner-button"
+                            onClick={() => {
+                                // Navigate back to start page
+                                window.location.href = '/';
+                            }}
+                        >
+                            Return to Lobby
+                        </button>
                     </div>
                 </div>
             )}
