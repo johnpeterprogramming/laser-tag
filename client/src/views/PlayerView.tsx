@@ -19,6 +19,9 @@ interface Player {
     id: string;
     name: string;
     health: number;
+    r?: number;
+    g?: number;
+    b?: number;
 }
 
 interface Lobby {
@@ -182,7 +185,7 @@ export default function PlayerView() {
 
                     // Could be unnecessary, but fine for now
                     if (canvasRef.current) {
-                      canvas(predictions);
+                        canvas(predictions);
                     }
                 } catch (error) {
                     console.error('Detection error:', error);
@@ -377,7 +380,7 @@ export default function PlayerView() {
             setCameraLoading(false);
             setError('Camera access denied. Please allow camera access and refresh the page.');
         }
-    };    
+    };
     // Join socket room and initialize player data
     useEffect(() => {
         if (lobbyCode && username) {
@@ -433,132 +436,206 @@ export default function PlayerView() {
         };
     }, []);
 
-  function getTargetPrediction(predictions: cocoSsd.DetectedObject[]): cocoSsd.DetectedObject[] {
-    if (!canvasRef.current) return [];
-    
-    const cx = canvasRef.current.width / 2;
-    const cy = canvasRef.current.height / 2;
-    const results = [];
-    for (const pred of predictions) {
-      if (pred.class === "person" && pred.score > 0.5) {
-        const [x, y, w, h] = pred.bbox;
-        // Check if crosshair (cx, cy) is within bbox
-        if (cx >= x && cx <= x + w && cy >= y && cy <= y + h) {
-          results.push(pred);
+    // Hardcoded color mappings for players (RGB values)
+    const playerColors: Record<string, { r: number; g: number; b: number }> = {
+        'Player1': { r: 96, g: 96, b: 80 },     // green
+        'Player2': { r: 48, g: 48, b: 48 },     // black
+        'Player3': { r: 50, g: 50, b: 180 },    // blue
+        'Player4': { r: 178, g: 34, b: 34 },   // white
+    };
+
+    // Function to calculate color distance between two RGB colors
+    const colorDistance = (color1: { r: number; g: number; b: number }, color2: { r: number; g: number; b: number }): number => {
+        const dr = color1.r - color2.r;
+        const dg = color1.g - color2.g;
+        const db = color1.b - color2.b;
+        return Math.sqrt(dr * dr + dg * dg + db * db);
+    };
+
+    // Function to parse RGB color string to RGB object
+    const parseRGBColor = (colorString: string): { r: number; g: number; b: number } | null => {
+        const match = colorString.match(/rgb\((\d+),(\d+),(\d+)\)/);
+        if (match) {
+            return {
+                r: parseInt(match[1]),
+                g: parseInt(match[2]),
+                b: parseInt(match[3])
+            };
         }
-      }
-    }
-    return results
-  }
+        return null;
+    };
 
-  async function segmentShirtColor(video: HTMLVideoElement, bbox: number[]): Promise<string | null> {
-  if (!bodyPixNet || !video || !bbox) return null;
+    // Function to find the closest matching player based on detected color
+    const findClosestPlayerByColor = (detectedColor: string): Player | null => {
+        if (!currentLobby) return null;
 
-  const SMALL_WIDTH = 350;
-  const SMALL_HEIGHT = 350;
-  
-  const [x, y, width, height] = bbox;
-  
-  // Define crop margins (adjust these values as needed)
-  const CROP_MARGIN_X = width * 0.2;  // Crop 20% from left/right edges
-  const CROP_MARGIN_Y = height * 0.2; // Crop 20% from top/bottom edges
-  
-  // Calculate cropped region
-  const croppedX = x + CROP_MARGIN_X;
-  const croppedY = y + CROP_MARGIN_Y;
-  const croppedWidth = width - (2 * CROP_MARGIN_X);
-  const croppedHeight = height - (2 * CROP_MARGIN_Y);
-  
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = SMALL_WIDTH;
-  tempCanvas.height = SMALL_HEIGHT;
-  const tempCtx = tempCanvas.getContext("2d");
-  
-  if (!tempCtx) return null;
-  
-  // Draw the cropped bounding box region, scaled down
-  tempCtx.drawImage(
-    video, // source
-    croppedX, croppedY, croppedWidth, croppedHeight, // cropped source rect
-    0, 0, SMALL_WIDTH, SMALL_HEIGHT                   // destination rect
-  );
+        const detectedRGB = parseRGBColor(detectedColor);
+        if (!detectedRGB) return null;
 
-  // Rest of your segmentation code...
-  const segmentation = await bodyPixNet.segmentPersonParts(tempCanvas, {
-    internalResolution: "low",
-    segmentationThreshold: 0.2,
-    scoreThreshold: 0.2,
-  });
+        let closestPlayer: Player | null = null;
+        let minDistance = Infinity;
 
-  // Process results...
-  console.log("Segmentation result:", segmentation);
-  // Parts 12, 13 = torso
-  const { data: partMap } = segmentation;
-  console.log("Part map:", partMap);
-  const uniqueParts = [...new Set(partMap)];
-  console.log("Detected body parts:", uniqueParts);
-  console.log("Looking for torso parts: 12 (torso_front), 13 (torso_back)");
+        const otherPlayers = currentLobby.players;
+        // Filter out the current player (can't shoot yourself)
+        // const otherPlayers = currentLobby.players.filter(p => p.id !== socket.id);
 
-  const imgData = tempCtx.getImageData(0, 0, SMALL_WIDTH, SMALL_HEIGHT);
-  
-  // Use Map to count color frequencies
-  const colorFrequency = new Map();
-  
-  for (let i = 0; i < partMap.length; i++) {
-    if (partMap[i] === 12 || partMap[i] === 13 || partMap[i] === 2 || partMap[i] === 3 || partMap[i] === 4 || partMap[i] === 5) {
-      // Get pixel coordinates
-      const segX = i % segmentation.width;
-      const segY = Math.floor(i / segmentation.width);
-      
-      // Scale to canvas coordinates
-      const canvasX = Math.floor((segX / segmentation.width) * SMALL_WIDTH);
-      const canvasY = Math.floor((segY / segmentation.height) * SMALL_HEIGHT);
-      
-      const pixelIndex = (canvasY * SMALL_WIDTH + canvasX) * 4;
-      
-      if (pixelIndex < imgData.data.length) {
-        const r = imgData.data[pixelIndex];
-        const g = imgData.data[pixelIndex + 1];
-        const b = imgData.data[pixelIndex + 2];
-        
-        // Quantize colors to reduce noise (group similar colors together)
-        const quantizedR = Math.round(r / 16) * 16; // Reduce to 16 levels
-        const quantizedG = Math.round(g / 16) * 16;
-        const quantizedB = Math.round(b / 16) * 16;
-        
-        const colorKey = `${quantizedR},${quantizedG},${quantizedB}`;
-        
-        if (colorFrequency.has(colorKey)) {
-          colorFrequency.set(colorKey, colorFrequency.get(colorKey) + 1);
+        for (const player of otherPlayers) {
+            // Try to get color from player's stored color properties first
+            let playerColor: { r: number; g: number; b: number } | null = null;
+
+            if (player.r !== undefined && player.g !== undefined && player.b !== undefined) {
+                playerColor = { r: player.r, g: player.g, b: player.b };
+            } else {
+                // Fallback to hardcoded colors based on player name
+                playerColor = playerColors[player.name];
+            }
+
+            if (playerColor) {
+                const distance = colorDistance(detectedRGB, playerColor);
+                console.log(`🎯 Color distance to ${player.name}:`, distance, `(detected: rgb(${detectedRGB.r},${detectedRGB.g},${detectedRGB.b}), player: rgb(${playerColor.r},${playerColor.g},${playerColor.b}))`);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestPlayer = player;
+                }
+            }
+        }
+
+        if (closestPlayer) {
+            console.log(`🎯 Closest color match: ${closestPlayer.name} (distance: ${minDistance})`);
         } else {
-          colorFrequency.set(colorKey, 1);
+            console.log(`🎯 No color match found for detected color: ${detectedColor}`);
         }
-      }
+
+        return closestPlayer;
+    };
+
+    function getTargetPrediction(predictions: cocoSsd.DetectedObject[]): cocoSsd.DetectedObject[] {
+        if (!canvasRef.current) return [];
+
+        const cx = canvasRef.current.width / 2;
+        const cy = canvasRef.current.height / 2;
+        const results = [];
+        for (const pred of predictions) {
+            if (pred.class === "person" && pred.score > 0.5) {
+                const [x, y, w, h] = pred.bbox;
+                // Check if crosshair (cx, cy) is within bbox
+                if (cx >= x && cx <= x + w && cy >= y && cy <= y + h) {
+                    results.push(pred);
+                }
+            }
+        }
+        return results
     }
-  }
-  
-  if (colorFrequency.size > 0) {
-    // Find the mode (most frequent color)
-    let maxCount = 0;
-    let modeColor = null;
-    
-    for (const [colorKey, count] of colorFrequency.entries()) {
-      if (count > maxCount) {
-        maxCount = count;
-        const [r, g, b] = colorKey.split(',').map(Number);
-        modeColor = { r, g, b };
-      }
+
+    async function segmentShirtColor(video: HTMLVideoElement, bbox: number[]): Promise<string | null> {
+        if (!bodyPixNet || !video || !bbox) return null;
+
+        const SMALL_WIDTH = 350;
+        const SMALL_HEIGHT = 350;
+
+        const [x, y, width, height] = bbox;
+
+        // Define crop margins (adjust these values as needed)
+        const CROP_MARGIN_X = width * 0.2;  // Crop 20% from left/right edges
+        const CROP_MARGIN_Y = height * 0.2; // Crop 20% from top/bottom edges
+
+        // Calculate cropped region
+        const croppedX = x + CROP_MARGIN_X;
+        const croppedY = y + CROP_MARGIN_Y;
+        const croppedWidth = width - (2 * CROP_MARGIN_X);
+        const croppedHeight = height - (2 * CROP_MARGIN_Y);
+
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = SMALL_WIDTH;
+        tempCanvas.height = SMALL_HEIGHT;
+        const tempCtx = tempCanvas.getContext("2d");
+
+        if (!tempCtx) return null;
+
+        // Draw the cropped bounding box region, scaled down
+        tempCtx.drawImage(
+            video, // source
+            croppedX, croppedY, croppedWidth, croppedHeight, // cropped source rect
+            0, 0, SMALL_WIDTH, SMALL_HEIGHT                   // destination rect
+        );
+
+        // Rest of your segmentation code...
+        const segmentation = await bodyPixNet.segmentPersonParts(tempCanvas, {
+            internalResolution: "low",
+            segmentationThreshold: 0.2,
+            scoreThreshold: 0.2,
+        });
+
+        // Process results...
+        console.log("Segmentation result:", segmentation);
+        // Parts 12, 13 = torso
+        const { data: partMap } = segmentation;
+        console.log("Part map:", partMap);
+        const uniqueParts = [...new Set(partMap)];
+        console.log("Detected body parts:", uniqueParts);
+        console.log("Looking for torso parts: 12 (torso_front), 13 (torso_back)");
+
+        const imgData = tempCtx.getImageData(0, 0, SMALL_WIDTH, SMALL_HEIGHT);
+
+        // Use Map to count color frequencies
+        const colorFrequency = new Map();
+
+        for (let i = 0; i < partMap.length; i++) {
+            if (partMap[i] === 12 || partMap[i] === 13 || partMap[i] === 2 || partMap[i] === 3 || partMap[i] === 4 || partMap[i] === 5) {
+                // Get pixel coordinates
+                const segX = i % segmentation.width;
+                const segY = Math.floor(i / segmentation.width);
+
+                // Scale to canvas coordinates
+                const canvasX = Math.floor((segX / segmentation.width) * SMALL_WIDTH);
+                const canvasY = Math.floor((segY / segmentation.height) * SMALL_HEIGHT);
+
+                const pixelIndex = (canvasY * SMALL_WIDTH + canvasX) * 4;
+
+                if (pixelIndex < imgData.data.length) {
+                    const r = imgData.data[pixelIndex];
+                    const g = imgData.data[pixelIndex + 1];
+                    const b = imgData.data[pixelIndex + 2];
+
+                    // Quantize colors to reduce noise (group similar colors together)
+                    const quantizedR = Math.round(r / 16) * 16; // Reduce to 16 levels
+                    const quantizedG = Math.round(g / 16) * 16;
+                    const quantizedB = Math.round(b / 16) * 16;
+
+                    const colorKey = `${quantizedR},${quantizedG},${quantizedB}`;
+
+                    if (colorFrequency.has(colorKey)) {
+                        colorFrequency.set(colorKey, colorFrequency.get(colorKey) + 1);
+                    } else {
+                        colorFrequency.set(colorKey, 1);
+                    }
+                }
+            }
+        }
+
+        if (colorFrequency.size > 0) {
+            // Find the mode (most frequent color)
+            let maxCount = 0;
+            let modeColor = null;
+
+            for (const [colorKey, count] of colorFrequency.entries()) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    const [r, g, b] = colorKey.split(',').map(Number);
+                    modeColor = { r, g, b };
+                }
+            }
+
+            console.log(`Mode color found with ${maxCount} occurrences:`, modeColor);
+            console.log(`Total unique colors: ${colorFrequency.size}`);
+
+            return modeColor ? `rgb(${modeColor.r},${modeColor.g},${modeColor.b})` : null;
+        } else {
+            console.log("No torso pixels found");
+            return null;
+        }
     }
-    
-    console.log(`Mode color found with ${maxCount} occurrences:`, modeColor);
-    console.log(`Total unique colors: ${colorFrequency.size}`);
-    
-    return modeColor ? `rgb(${modeColor.r},${modeColor.g},${modeColor.b})` : null;
-  } else {
-    console.log("No torso pixels found");
-    return null;
-  }
-}
 
     const handleShoot = async () => {
         setRecoil(true);
@@ -566,49 +643,29 @@ export default function PlayerView() {
 
         const targets = getTargetPrediction(predictionsRef.current);
         if (targets.length > 0 && videoRef.current) {
-          for (const target of targets) {
-            // console.log("Hit target:", target);
-            const color = await segmentShirtColor(videoRef.current, target.bbox);
-            // console.log("Segmented shirt color:", color);
-            // Here you can handle the hit logic, e.g., send a hit event to the server
-          }
+            for (const target of targets) {
+                console.log("🎯 Hit target:", target);
+                const color = await segmentShirtColor(videoRef.current, target.bbox);
+                console.log("🎨 Segmented shirt color:", color);
+
+                if (color) {
+                    // Find the closest player by color
+                    const targetPlayer = findClosestPlayerByColor(color);
+                    if (targetPlayer) {
+                        console.log(`🎯 Targeting ${targetPlayer.name} based on color match`);
+                        socket.emit('playerShoot', {
+                            targetPlayerId: targetPlayer.id,
+                            lobbyCode: lobbyCode,
+                            damage: 25
+                        });
+                        break; // Only target the first matched player
+                    }
+                }
+            }
         }
 
         const id = Date.now();
         setParticles((prev: Particle[]) => [...prev, { id }]);
-
-        // Check if we hit a player based on object detection
-        if (predictionsRef.current && lobbyCode) {
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-
-            // Check if crosshair is over a detected person
-            const hitTarget = predictionsRef.current.find((pred: cocoSsd.DetectedObject) => {
-                if (pred.class === "person" && pred.score > 0.5) {
-                    const [x, y, width, height] = pred.bbox;
-                    return centerX >= x && centerX <= x + width &&
-                        centerY >= y && centerY <= y + height;
-                }
-                return false;
-            });
-
-            if (hitTarget) {
-                // For demo purposes, simulate hitting a random player
-                // console.log("Player hit!");
-                const availablePlayers = currentLobby?.players?.filter((p: Player) => p.id !== socket.id) || [];
-                // console.log(availablePlayers);
-                if (availablePlayers.length > 0) {
-                    const randomPlayer = availablePlayers[Math.floor(Math.random() * availablePlayers.length)];
-                    // console.log("Shooting:" + randomPlayer.name);
-                    socket.emit('playerShoot', {
-                        targetPlayerId: randomPlayer.id,
-                        lobbyCode: lobbyCode,
-                        damage: 25
-                    });
-                }
-            }
-            // else console.log("Player has not been hit!")
-        }
 
         // Remove particle after 400ms
         setTimeout(() => {
@@ -701,6 +758,35 @@ export default function PlayerView() {
             {currentLobby?.state === 'active' && (
                 <div className="debug-panel">
                     <h3>Debug Controls</h3>
+
+                    {/* Player Colors Display */}
+                    <div style={{ marginBottom: '15px' }}>
+                        <h4 style={{ color: 'white', margin: '0 0 10px 0', fontSize: '0.9rem' }}>Player Colors:</h4>
+                        {currentLobby.players.map(player => (
+                            <div key={player.id} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '5px',
+                                fontSize: '0.8rem'
+                            }}>
+                                <div
+                                    style={{
+                                        width: '16px',
+                                        height: '16px',
+                                        backgroundColor: player.r !== undefined ? `rgb(${player.r},${player.g},${player.b})` : '#666',
+                                        marginRight: '8px',
+                                        border: '1px solid white',
+                                        borderRadius: '2px'
+                                    }}
+                                />
+                                <span style={{ color: 'white' }}>
+                                    {player.name} {player.id === socket.id ? '(You)' : ''}
+                                    {player.r !== undefined && ` - rgb(${player.r},${player.g},${player.b})`}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
                     <button
                         onClick={(e) => {
                             e.stopPropagation();

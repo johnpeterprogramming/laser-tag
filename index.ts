@@ -17,12 +17,12 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: true, // TODO: change to use environment variable for production
-    methods: ["GET", "POST"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"]
-  }
+    cors: {
+        origin: true, // TODO: change to use environment variable for production
+        methods: ["GET", "POST"],
+        credentials: true,
+        allowedHeaders: ["Content-Type", "Authorization"]
+    }
 });
 
 // Serve built React app from build directory
@@ -31,12 +31,12 @@ app.use(express.static(buildPath));
 
 // Handle React Router routes - send all non-API requests to React
 app.get(/^(?!\/api).*/, (_req: Request, res: Response) => {
-  res.sendFile(path.join(buildPath, 'index.html'));
+    res.sendFile(path.join(buildPath, 'index.html'));
 });
 
 // Simple test route for API
 app.get('/api/test', (_req: Request, res: Response) => {
-  res.json({ message: "Laser Tag Server is running!" });
+    res.json({ message: "Laser Tag Server is running!" });
 });
 
 // Socket logic : TODO: reduce duplication, same type is used for frontend
@@ -48,6 +48,49 @@ type Lobby = {
 };
 
 const lobbies: Record<string, Lobby> = {};
+
+// Hardcoded color mappings for players (RGB values) - matching client-side
+const playerColors: Record<string, { r: number; g: number; b: number }> = {
+    'Player1': { r: 96, g: 96, b: 80 },     // green
+    'Player2': { r: 48, g: 48, b: 48 },     // black
+    'Player3': { r: 64, g: 96, b: 128 },    // blue
+    'Player4': { r: 178, g: 34, b: 34 },    // red/white
+};
+
+// Function to get color for a player based on their name
+// TODO assign based on lobby colour
+const getPlayerColor = (playerName: string, isHost: boolean = false) => {
+    if (isHost) {
+        // Host gets the specific green color
+        return { r: 96, g: 96, b: 80 };
+    }
+
+    // Try to get color from hardcoded mapping first
+    const hardcodedColor = playerColors[playerName];
+    if (hardcodedColor) {
+        return hardcodedColor;
+    }
+
+    // Fallback colors for other players
+    const fallbackColors = [
+        { r: 48, g: 48, b: 48 },     // black
+        { r: 50, g: 50, b: 180 },    // blue  
+        { r: 178, g: 34, b: 34 },    // red
+        { r: 255, g: 255, b: 0 },    // yellow
+        { r: 255, g: 0, b: 255 },    // magenta
+        { r: 0, g: 255, b: 255 },    // cyan
+        { r: 255, g: 165, b: 0 },    // orange
+        { r: 128, g: 0, b: 128 },    // purple
+    ];
+
+    // Use player name hash to get consistent color
+    const hash = playerName.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+    }, 0);
+
+    return fallbackColors[Math.abs(hash) % fallbackColors.length];
+};
 
 io.on('connection', (socket: Socket) => {
     console.log("A user connected");
@@ -78,7 +121,14 @@ io.on('connection', (socket: Socket) => {
         lobbies[lobbyCode] = {
             code: lobbyCode,
             state: 'waiting',
-            players: [{ id: socket.id, name: playerName, isHost: true, health: 100, maxHealth: 100 }],
+            players: [{
+                id: socket.id,
+                name: playerName,
+                isHost: true,
+                health: 100,
+                maxHealth: 100,
+                ...getPlayerColor(playerName, true) // Assign host color
+            }],
         };
 
 
@@ -138,7 +188,15 @@ io.on('connection', (socket: Socket) => {
             return;
         }
 
-        lobby.players.push({ id: socket.id, name: playerName, isHost: false, health: 100, maxHealth: 100 });
+        lobby.players.push({
+            id: socket.id,
+            name: playerName,
+            isHost: false,
+            health: 100,
+            maxHealth: 100,
+            ...getPlayerColor(playerName, false) // Assign color based on name
+        });
+
 
         // Can join lobby
         socket.emit('joinLobbyResponse', {
@@ -296,7 +354,7 @@ io.on('connection', (socket: Socket) => {
 });
 
 server.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+    console.log(`Server listening on port ${port}`);
 });
 
 
