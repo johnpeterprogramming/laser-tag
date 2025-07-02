@@ -47,11 +47,6 @@ export default function PlayerView() {
           ctx.strokeRect(...pred.bbox);
           ctx.font = "16px Arial";
           ctx.fillStyle = "red";
-          // ctx.fillText(
-          //   `${pred.class} (${(pred.score * 100).toFixed(1)}%)`,
-          //   pred.bbox[0],
-          //   pred.bbox[1] > 20 ? pred.bbox[1] - 5 : 10,
-          // );
         }
       });
     };
@@ -68,8 +63,6 @@ export default function PlayerView() {
     const detectFrame = async () => {
       if (videoRef.current && modelLoaded) {
         const predictions = await model.detect(videoRef.current);
-        // const segmentedPredictions = await bodyPixModel.segmentPerson(videoRef.current, {multiSegmentation: true, segmentBodyParts: true});
-        // console.log("Segmented Predictions:", segmentedPredictions);
         predictionsRef.current = predictions;
         if (canvasRef.current) {
           canvas(predictions);
@@ -116,75 +109,6 @@ export default function PlayerView() {
     }
     return results
   }
-
-  // async function segmentShirtColor(video, bbox) {
-  //   if (!bodyPixNet || !video || !bbox) return null;
-
-  //   const SMALL_WIDTH = 350;
-  //   const SMALL_HEIGHT = 350;
-    
-  //   const [x, y, width, height] = bbox;
-    
-  //   // Define crop margins (adjust these values as needed)
-  //   const CROP_MARGIN_X = width * 0.2;  // Crop 10% from left/right edges
-  //   const CROP_MARGIN_Y = height * 0.2; // Crop 10% from top/bottom edges
-    
-  //   // Calculate cropped region
-  //   const croppedX = x + CROP_MARGIN_X;
-  //   const croppedY = y + CROP_MARGIN_Y;
-  //   const croppedWidth = width - (2 * CROP_MARGIN_X);
-  //   const croppedHeight = height - (2 * CROP_MARGIN_Y);
-    
-  //   const tempCanvas = document.createElement("canvas");
-  //   tempCanvas.width = SMALL_WIDTH;
-  //   tempCanvas.height = SMALL_HEIGHT;
-  //   const tempCtx = tempCanvas.getContext("2d");
-    
-  //   // Draw the cropped bounding box region, scaled down
-  //   tempCtx.drawImage(
-  //     video, // source
-  //     croppedX, croppedY, croppedWidth, croppedHeight, // cropped source rect
-  //     0, 0, SMALL_WIDTH, SMALL_HEIGHT                   // destination rect
-  //   );
-
-  //   // Rest of your segmentation code...
-  //   const segmentation = await bodyPixNet.segmentPersonParts(tempCanvas, {
-  //     internalResolution: "low",
-  //     segmentationThreshold: 0.2,
-  //     scoreThreshold: 0.2,
-  //     // multiSegmentation: true, 
-  //     segmentBodyParts: true,
-  //   });
-
-  //   // Process results...
-  //   console.log("Segmentation result:", segmentation);
-  //       // Parts 12, 13 = torso
-  //   const { data: partMap } = segmentation;
-  //   console.log("Part map:", partMap);
-  //   const uniqueParts = [...new Set(partMap)];
-  //     console.log("Detected body parts:", uniqueParts);
-  //     console.log("Looking for torso parts: 12 (torso_front), 13 (torso_back)");
-
-  //   const imgData = tempCtx.getImageData(0, 0, width, height);
-  //   let r = 0, g = 0, b = 0, count = 0;
-  //   for (let i = 0; i < partMap.length; i++) {
-  //     if (partMap[i] === 12 || partMap[i] === 13 || partMap[i] === 2 || partMap[i] === 3 || partMap[i] === 4 || partMap[i] === 5) { // torso_front, torso_back, or torso_side
-  //       r += imgData.data[i * 4];
-  //       g += imgData.data[i * 4 + 1];
-  //       b += imgData.data[i * 4 + 2];
-  //       count++;
-  //     }
-  //   }
-  //   if (count > 0) {
-  //     return {
-  //       r: Math.round(r / count),
-  //       g: Math.round(g / count),
-  //       b: Math.round(b / count)
-  //     };
-  //   } else {
-  //     return null;
-  //   }
-  // }
 
   async function segmentShirtColor(video, bbox) {
   if (!bodyPixNet || !video || !bbox) return null;
