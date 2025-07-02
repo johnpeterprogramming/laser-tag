@@ -43,6 +43,7 @@ export default function PlayerView() {
     const [cameraLoading, setCameraLoading] = useState<boolean>(true); // Start with camera loading
     const [error, setError] = useState<string | null>(null);
     const [recoil, setRecoil] = useState<boolean>(false);
+    const [isDead, setIsDead] = useState<boolean>(false); // Track death state
 
     const location = useLocation();
     const { username, lobby } = (location.state as LocationState) || {};
@@ -486,6 +487,12 @@ export default function PlayerView() {
         }) => {
             if (data.targetId === socket.id) {
                 setHealth(data.targetHealth);
+
+                // Check if player died
+                if (data.targetHealth <= 0) {
+                    setIsDead(true);
+                }
+
                 // Add hit effect
                 document.body.style.background = "rgba(255, 0, 0, 0.3)";
                 setTimeout(() => {
@@ -500,6 +507,10 @@ export default function PlayerView() {
         }) => {
             if (data.playerId === socket.id) {
                 setHealth(data.newHealth);
+                // Clear death state if player is healed above 0
+                if (data.newHealth > 0) {
+                    setIsDead(false);
+                }
             }
         };
 
@@ -511,6 +522,10 @@ export default function PlayerView() {
             );
             if (currentPlayer) {
                 setHealth(currentPlayer.health);
+                // Clear death state if health is above 0
+                if (currentPlayer.health > 0) {
+                    setIsDead(false);
+                }
             }
         };
 
@@ -960,6 +975,17 @@ export default function PlayerView() {
                     >
                         Reset My Health
                     </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // Simulate death for testing
+                            setHealth(0);
+                            setIsDead(true);
+                        }}
+                        className="debug-button"
+                    >
+                        Simulate Death
+                    </button>
                 </div>
             )}
 
@@ -1033,6 +1059,17 @@ export default function PlayerView() {
                             </div>
                         </>
                     )}
+                </div>
+            )}
+
+            {/* Death Screen Overlay */}
+            {isDead && (
+                <div className="death-overlay">
+                    <div className="death-content">
+                        <div className="skull-icon">💀</div>
+                        <h1 className="death-title">YOU DIED</h1>
+                        <p className="death-subtitle">Game Over</p>
+                    </div>
                 </div>
             )}
         </div>
