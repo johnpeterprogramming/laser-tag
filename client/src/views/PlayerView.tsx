@@ -46,6 +46,8 @@ export default function PlayerView() {
     const [error, setError] = useState<string | null>(null);
     const [recoil, setRecoil] = useState<boolean>(false);
     const [isDead, setIsDead] = useState<boolean>(false); // Track death state
+    const [gameEnded, setGameEnded] = useState<boolean>(false); // Track if game has ended
+    const [winner, setWinner] = useState<Player | null>(null); // Track winner
 
     const location = useLocation();
     const { username, lobby } = (location.state as LocationState) || {};
@@ -57,7 +59,7 @@ export default function PlayerView() {
         const loadModels = async () => {
             try {
                 console.log("🤖 Loading AI models...");
-                
+
                 const [cocoModelResult, bodyPixModelResult] = await Promise.all([
                     cocoSsd.load(),
                     bodyPix.load()
@@ -66,7 +68,7 @@ export default function PlayerView() {
                 setCocoModel(cocoModelResult);
                 setBodyPixNet(bodyPixModelResult);
                 setModelsLoaded(true);
-                
+
                 console.log("✅ AI models loaded successfully");
             } catch (error) {
                 console.error("❌ Error loading AI models:", error);
@@ -203,7 +205,7 @@ export default function PlayerView() {
                 );
                 clearTimeout(cameraTimeout);
                 setCameraLoading(false);
-                
+
                 // Start detection loop since models are already loaded
                 if (videoRef.current && videoRef.current.readyState >= 2) {
                     detectFrame();
@@ -486,14 +488,22 @@ export default function PlayerView() {
             }
         };
 
+        const handleGameEnded = (data: { winner: Player; lobbyCode: string }) => {
+            console.log("Game ended! Winner:", data.winner.name);
+            setGameEnded(true);
+            setWinner(data.winner);
+        };
+
         socket.on("playerHit", handlePlayerHit);
         socket.on("playerHealed", handlePlayerHealed);
         socket.on("lobbyUpdated", handleLobbyUpdated);
+        socket.on("gameEnded", handleGameEnded);
 
         return () => {
             socket.off("playerHit", handlePlayerHit);
             socket.off("playerHealed", handlePlayerHealed);
             socket.off("lobbyUpdated", handleLobbyUpdated);
+            socket.off("gameEnded", handleGameEnded);
         };
     }, []);
 
@@ -725,9 +735,9 @@ export default function PlayerView() {
     }
 
     const handleShoot = async () => {
-        // Don't allow shooting if player is dead
-        if (isDead) return;
-        
+        // Don't allow shooting if player is dead or game has ended
+        if (isDead || gameEnded) return;
+
         setRecoil(true);
         setTimeout(() => setRecoil(false), 100); // reset after 100ms
 
@@ -932,12 +942,38 @@ export default function PlayerView() {
             )}
 
             {/* Death Screen Overlay */}
-            {isDead && (
+            {isDead && !gameEnded && (
                 <div className="death-overlay">
                     <div className="death-content">
                         <div className="skull-icon">💀</div>
                         <h1 className="death-title">YOU DIED</h1>
                         <p className="death-subtitle">Game Over</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Winner Screen Overlay */}
+            {gameEnded && (
+                <div className="winner-overlay">
+                    <div className="winner-content">
+                        <div className="winner-icon">🏆</div>
+                        <h1 className="winner-title">
+                            {winner?.id === socket.id ? "VICTORY!" : `${winner?.name} WINS!`}
+                        </h1>
+                        <p className="winner-subtitle">
+                            {winner?.id === socket.id
+                                ? "Congratulations! You are the last player standing!"
+                                : "Better luck next time!"}
+                        </p>
+                        <button
+                            className="winner-button"
+                            onClick={() => {
+                                // Navigate back to start page
+                                window.location.href = '/';
+                            }}
+                        >
+                            Return to Lobby
+                        </button>
                     </div>
                 </div>
             )}
