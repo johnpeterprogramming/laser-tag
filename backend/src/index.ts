@@ -27,7 +27,7 @@ app.get("/api", (req, res) => {
 
 
 // Socket logic : TODO: reduce duplication, same type is used for frontend
-type Player = { id: string, name: string, isHost: boolean };
+type Player = { id: string, name: string, isHost: boolean, r?: number, g?: number, b?: number };
 type Lobby = {
   code: string,
   players: Player[];
