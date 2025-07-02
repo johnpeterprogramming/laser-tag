@@ -210,15 +210,53 @@ export default function PlayerView() {
         try {
             console.log("🎥 Requesting camera access...");
 
-            console.log("Trying camera with environment facing mode...");
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: "environment",
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
+            const cameraConfigs = [
+                {
+                    video: {
+                        facingMode: "environment",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                    },
                 },
-            });
-            console.log("✅ Camera stream obtained");
+                {
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                    },
+                },
+                {
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                    },
+                },
+                {
+                    video: true,
+                },
+            ];
+            let streamResult: MediaStream | null = null;
+
+
+            let lastError: Error | null = null;
+            for (const config of cameraConfigs) {
+                try {
+                    // console.log("Trying camera config:", config);
+                    streamResult = await navigator.mediaDevices.getUserMedia(config);
+                    console.log("✅ Camera stream obtained with config:", config);
+                    break;
+                } catch (err) {
+                    console.log("❌ Camera config failed:", config, err);
+                    lastError = err as Error;
+                    continue;
+                }
+            }
+
+            if (!streamResult) {
+                throw lastError || new Error("No camera configuration worked");
+            }
+
+            stream = streamResult;
+
 
             if (videoRef.current) {
                 console.log("🎬 Assigning stream to video element...");
