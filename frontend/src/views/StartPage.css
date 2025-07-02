@@ -104,10 +104,16 @@
 }
 
 .error-message {
+  background-color: rgba(204, 36, 29, 0.1); /* light red background */
+  border-left: 4px solid #cc241d;
   color: #cc241d;
-  margin-top: 10px;
+  padding: 10px 12px;
+  margin-top: 15px;
   font-weight: bold;
+  border-radius: 6px;
+  animation: fadeInPop 0.4s ease;
 }
+
 
 .note {
   margin-top: 30px;
