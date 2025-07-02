@@ -210,15 +210,57 @@ export default function PlayerView() {
         try {
             console.log("🎥 Requesting camera access...");
 
-            console.log("Trying camera with environment facing mode...");
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: "environment",
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
+            const cameraConfigs = [
+                {
+                    video: {
+                        facingMode: "environment",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                    },
                 },
-            });
-            console.log("✅ Camera stream obtained");
+                {
+                    video: {
+                        facingMode: "environment",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                    },
+                },
+                {
+                    video: {
+                        facingMode: "environment",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                    },
+                },
+                {
+                    video: {
+                        facingMode: "environment",
+                    }
+                },
+            ];
+            let streamResult: MediaStream | null = null;
+
+
+            let lastError: Error | null = null;
+            for (const config of cameraConfigs) {
+                try {
+                    // console.log("Trying camera config:", config);
+                    streamResult = await navigator.mediaDevices.getUserMedia(config);
+                    console.log("✅ Camera stream obtained with config:", config);
+                    break;
+                } catch (err) {
+                    console.log("❌ Camera config failed:", config, err);
+                    lastError = err as Error;
+                    continue;
+                }
+            }
+
+            if (!streamResult) {
+                throw lastError || new Error("No camera configuration worked");
+            }
+
+            stream = streamResult;
+
 
             if (videoRef.current) {
                 console.log("🎬 Assigning stream to video element...");
@@ -734,48 +776,6 @@ export default function PlayerView() {
     // Main game interface
     return (
         <div className="player-wrapper" onClick={handleShoot}>
-            {/* Camera Debug Panel - only show if loading or in development */}
-            {/* {(cameraLoading || process.env.NODE_ENV === 'development') && (
-                <div style={{
-                    position: 'fixed',
-                    top: '10px',
-                    right: '10px',
-                    background: 'rgba(0,0,0,0.8)',
-                    color: 'white',
-                    padding: '10px',
-                    borderRadius: '5px',
-                    fontSize: '12px',
-                    zIndex: 1000,
-                    fontFamily: 'monospace'
-                }}>
-                    <div>📊 Camera Debug</div>
-                    <div>Stream: {cameraDebug.hasStream ? '✅' : '❌'}</div>
-                    <div>Video Element: {cameraDebug.hasVideoElement ? '✅' : '❌'}</div>
-                    <div>Dimensions: {cameraDebug.videoWidth}x{cameraDebug.videoHeight}</div>
-                    <div>Ready State: {cameraDebug.readyState}</div>
-                    <div>Camera Loading: {cameraLoading ? 'Yes' : 'No'}</div>
-                    {cameraDebug.error && <div>Error: {cameraDebug.error}</div>}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            window.location.reload();
-                        }}
-                        style={{
-                            marginTop: '5px',
-                            padding: '2px 6px',
-                            fontSize: '10px',
-                            background: '#444',
-                            color: 'white',
-                            border: '1px solid #666',
-                            borderRadius: '3px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        🔄 Retry
-                    </button>
-                </div>
-            )} */}
-
             {/* Health Bar */}
             <div className="player-health-overlay">
                 <div className="health-bar-container">
