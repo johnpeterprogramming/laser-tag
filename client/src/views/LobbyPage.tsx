@@ -26,7 +26,7 @@ function LobbyPage() {
     // Handle lobby updates
     useEffect(() => {
         initializeCamera();
-        // loadModels();
+        loadModels();
         
         if (lobby && username) {
             socket.on("lobbyUpdated", (lobby: Lobby) => {
@@ -61,6 +61,20 @@ function LobbyPage() {
             return () => clearTimeout(timer);
         }
     }, [lobby, username, navigate]);
+
+    const loadModels = async () => {
+        try {
+            const [cocoModel, bodyPixModel] = await Promise.all([
+                cocoSsd.load(),
+                bodyPix.load()
+            ]);
+            setCocoModel(cocoModel);
+            setBodyPixModel(bodyPixModel);
+            console.log('Models loaded successfully:', { cocoModel, bodyPixModel });
+        } catch (error) {
+            console.error('Error loading models:', error);
+        }
+    };
 
     const initializeCamera = async () => {
     try {
