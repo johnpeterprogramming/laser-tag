@@ -396,12 +396,8 @@ io.on("connection", (socket: Socket) => {
         // If no players in lobby - delete lobby
         for (const lobbyCode in lobbies) {
             const lobby = lobbies[lobbyCode];
-<<<<<<< HEAD
-            if (lobby.players.length == 0) delete lobbies[lobbyCode];
-=======
             if (lobby.players.length === 0)
                 delete lobbies[lobbyCode];
->>>>>>> origin/dev
         }
     });
 });
