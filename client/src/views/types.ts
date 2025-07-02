@@ -1,4 +1,13 @@
-export type Player = { id: string, name: string, isHost: boolean, health: number, maxHealth: number };
+export type Player = { 
+    id: string, 
+    name: string, 
+    isHost: boolean, 
+    health: number, 
+    maxHealth: number, 
+    r?: number, 
+    g?: number, 
+    b?: number 
+};
 export type Lobby = {
     code: string,
     players: Player[];

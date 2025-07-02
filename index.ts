@@ -272,6 +272,43 @@ io.on('connection', (socket: Socket) => {
         io.to(lobbyCode).emit('lobbyUpdated', lobby);
     });
 
+    // Handle player color detection
+    socket.on('playerColorDetected', ({ lobbyCode, username, rgb }) => {
+        console.log(`Player ${username} in lobby ${lobbyCode} detected color: RGB(${rgb.r}, ${rgb.g}, ${rgb.b})`);
+        
+        const lobby = lobbies[lobbyCode];
+        if (!lobby) {
+            console.log(`Lobby ${lobbyCode} not found for color detection`);
+            return;
+        }
+
+        const player = lobby.players.find(p => p.name === username);
+        if (!player) {
+            console.log(`Player ${username} not found in lobby ${lobbyCode}`);
+            return;
+        }
+
+        // Store RGB values in player object
+        player.r = rgb.r;
+        player.g = rgb.g;
+        player.b = rgb.b;
+
+        console.log(`Stored RGB(${rgb.r}, ${rgb.g}, ${rgb.b}) for player ${username}`);
+        
+        // Debug: Print all players and their colors
+        console.log(`\n=== LOBBY ${lobbyCode} - ALL PLAYERS AND COLORS ===`);
+        lobby.players.forEach((p, index) => {
+            const colorInfo = (p.r !== undefined && p.g !== undefined && p.b !== undefined) 
+                ? `RGB(${p.r}, ${p.g}, ${p.b})` 
+                : 'No color detected';
+            console.log(`${index + 1}. ${p.name} (${p.isHost ? 'Host' : 'Player'}) - ${colorInfo}`);
+        });
+        console.log(`===============================================\n`);
+        
+        // Update lobby state to notify all players
+        io.to(lobbyCode).emit('lobbyUpdated', lobby);
+    });
+
     socket.on('disconnect', () => {
         console.log('user disconnected');
 
