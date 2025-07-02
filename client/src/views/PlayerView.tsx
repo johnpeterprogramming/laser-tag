@@ -52,48 +52,6 @@ export default function PlayerView() {
     // Debug logging
     // console.log('PlayerView render:', { username, lobby, lobbyCode, currentLobby });
 
-    // Add debug state for camera status
-    // @ts-ignore
-    const [cameraDebug, setCameraDebug] = useState<{
-        hasStream: boolean;
-        hasVideoElement: boolean;
-        videoWidth: number;
-        videoHeight: number;
-        readyState: number;
-        error: string | null;
-    }>({
-        hasStream: false,
-        hasVideoElement: false,
-        videoWidth: 0,
-        videoHeight: 0,
-        readyState: 0,
-        error: null,
-    });
-
-    // Update debug info periodically and immediately when video changes
-    useEffect(() => {
-        const updateDebugInfo = () => {
-            if (videoRef.current) {
-                setCameraDebug({
-                    hasStream: !!videoRef.current.srcObject,
-                    hasVideoElement: !!videoRef.current,
-                    videoWidth: videoRef.current.videoWidth || 0,
-                    videoHeight: videoRef.current.videoHeight || 0,
-                    readyState: videoRef.current.readyState || 0,
-                    error: error,
-                });
-            }
-        };
-
-        // Update immediately
-        updateDebugInfo();
-
-        // Then update every second
-        const debugInterval = setInterval(updateDebugInfo, 1000);
-
-        return () => clearInterval(debugInterval);
-    }, [error]);
-
     // Automatically start camera initialization when component mounts
     useEffect(() => {
         initCamera();
@@ -320,13 +278,6 @@ export default function PlayerView() {
                             readyState: t.readyState,
                         })),
                 });
-
-                // Force debug update immediately
-                setCameraDebug((prev) => ({
-                    ...prev,
-                    hasStream: !!videoRef.current?.srcObject,
-                    hasVideoElement: !!videoRef.current,
-                }));
 
                 // Wait a bit for the stream to be processed by the video element
                 await new Promise((resolve) => setTimeout(resolve, 100));
@@ -875,93 +826,6 @@ export default function PlayerView() {
                     Heal (+25)
                 </button> */}
             </div>
-
-            {/* Debug panel for testing health system */}
-            {currentLobby?.state === "active" && (
-                <div className="debug-panel">
-                    <h3>Debug Controls</h3>
-
-                    {/* Player Colors Display */}
-                    <div style={{ marginBottom: "15px" }}>
-                        <h4
-                            style={{
-                                color: "white",
-                                margin: "0 0 10px 0",
-                                fontSize: "0.9rem",
-                            }}
-                        >
-                            Player Colors:
-                        </h4>
-                        {currentLobby.players.map((player) => (
-                            <div
-                                key={player.id}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    marginBottom: "5px",
-                                    fontSize: "0.8rem",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        width: "16px",
-                                        height: "16px",
-                                        backgroundColor:
-                                            player.r !== undefined
-                                                ? `rgb(${player.r},${player.g},${player.b})`
-                                                : "#666",
-                                        marginRight: "8px",
-                                        border: "1px solid white",
-                                        borderRadius: "2px",
-                                    }}
-                                />
-                                <span style={{ color: "white" }}>
-                                    {player.name} {player.id === socket.id ? "(You)" : ""}
-                                    {player.r !== undefined &&
-                                        ` - rgb(${player.r},${player.g},${player.b})`}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (lobbyCode && currentLobby) {
-                                // Simulate taking damage
-                                const randomPlayer =
-                                    currentLobby?.players[
-                                    Math.floor(Math.random() * currentLobby.players.length)
-                                    ];
-                                if (randomPlayer) {
-                                    socket.emit("playerShoot", {
-                                        targetPlayerId: randomPlayer.id,
-                                        lobbyCode: lobbyCode,
-                                        damage: 25,
-                                    });
-                                }
-                            }
-                        }}
-                        className="debug-button"
-                    >
-                        Simulate Hit (Random Player)
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (lobbyCode) {
-                                socket.emit("resetPlayerHealth", {
-                                    playerId: socket.id,
-                                    lobbyCode: lobbyCode,
-                                });
-                            }
-                        }}
-                        className="debug-button"
-                    >
-                        Reset My Health
-                    </button>
-                </div>
-            )}
 
             {/* Video stream and canvas for object detection */}
             <video
