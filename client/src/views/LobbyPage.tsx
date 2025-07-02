@@ -22,6 +22,7 @@ function LobbyPage() {
     const [stream, setStream] = useState<MediaStream | null>(null);
     const [bodyPixModel, setBodyPixModel] = useState<bodyPix.BodyPix | null>(null);
     const [cocoModel, setCocoModel] = useState<cocoSsd.ObjectDetection | null>(null);
+    const selfieNotTaken = useRef(true); // Track if selfie has NOT been taken
 
     // Handle lobby updates
     useEffect(() => {
@@ -119,6 +120,7 @@ function LobbyPage() {
         const video = videoRef.current;
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
+        // const cocoModel = cocoModel.current;
 
         if (!ctx) {
             console.error('Canvas context not available');
@@ -162,6 +164,12 @@ function LobbyPage() {
 
             console.log(`Detected color RGB(${avgR}, ${avgG}, ${avgB}) for player ${username}`);
         }
+
+        // hide the video element and button after taking a selfie
+        if (videoRef.current) {
+            videoRef.current.style.display = 'none'; // Hide the video element after taking a selfie
+            selfieNotTaken.current = false; // Mark that a selfie has been taken
+        }
     }
 
 
@@ -169,7 +177,8 @@ function LobbyPage() {
 
         <div className="lobby-page-container">
             {/* Video stream and canvas for object detection */}
-            <video
+            {lobbyState && selfieNotTaken.current&& (
+                <video
                 ref={videoRef}
                 autoPlay
                 playsInline
@@ -179,14 +188,13 @@ function LobbyPage() {
                     background: '#000',
                     display: 'block' // Ensure video is visible
                 }}
-            />
-            <canvas
+            />)}
+            {lobbyState && selfieNotTaken.current&& (<canvas
                 ref={canvasRef}
                 className="player-canvas"
-            />
-            
+            />)}
             {/* Bottom button positioned over video */}
-            {lobbyState && (
+            {lobbyState && selfieNotTaken.current&& (
                 <button
                     className="bottom-button"
                     onClick={handleTakeSelfie}
