@@ -2,8 +2,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 100vh;
+  max-height: 100vh;
   background-color: #fbf1c7;
   color: #3c3836;
   font-family: "Inter", Arial, sans-serif;
@@ -11,7 +12,20 @@
   text-align: center;
   border-radius: 10px;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.lobby-page-container > .waiting-message {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin-top: 16px;
+  z-index: 10;
+  background: #fbf1c7;
+  padding-bottom: 16px;
 }
 
 .lobby-page-container h1 {
@@ -26,12 +40,21 @@
   color: #928374;
 }
 
+.player-list-scroll-wrapper {
+  width: 80%;
+  max-width: 300px;
+  max-height: 300px;
+  margin: 20px 0;
+  overflow-y: auto;
+  background: none;
+  border-radius: 8px;
+}
+
 .player-list {
   list-style: none;
   padding: 0;
-  margin: 20px 0;
-  width: 80%;
-  max-width: 300px;
+  margin: 0;
+  width: 100%;
   background-color: #ebdbb2;
   border-radius: 8px;
   overflow: hidden;

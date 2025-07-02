@@ -68,23 +68,25 @@ function LobbyPage() {
       {errorMessage && <p className="error-message">{errorMessage}</p>}
 
       <h2>Players ({playerCount}/20):</h2>
-      {lobbyState?.players.length === 0 ? (
-        <p>No players in this lobby yet.</p>
-      ) : (
-        <ul className="player-list">
-          {lobbyState?.players.map((player) => (
-            <li
-              key={player.id}
-              className={player.name === username ? 'current-player' : ''}
-            >
-              {player.name}
-              {player.isSpectator && ' 🥽 '}
-              {player.name === username && ' (You)'}
-              {player.isHost && ' (Host)'}
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="player-list-scroll-wrapper">
+        {lobbyState?.players.length === 0 ? (
+          <p>No players in this lobby yet.</p>
+        ) : (
+          <ul className="player-list">
+            {lobbyState?.players.map((player) => (
+              <li
+                key={player.id}
+                className={player.name === username ? 'current-player' : ''}
+              >
+                {player.name}
+                {player.isSpectator && ' 🥽 '}
+                {player.name === username && ' (You)'}
+                {player.isHost && ' (Host)'}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {lobbyState && playerState?.isHost && (
         <button
