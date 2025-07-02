@@ -51,16 +51,25 @@ function LobbyPage() {
                 setPlayerState(currentPlayer || null);
             });
 
-            // Listen for game start - ALL players should navigate when game starts
+            // Listen for game start - route based on player type
             socket.on('gameStarted', (updatedLobby) => {
-                console.log('Game started! Navigating to player view...', { username, lobbyCode: updatedLobby.code });
-                // Navigate to player view when game starts
-                navigate('/player', {
-                    state: {
-                        username: username,
-                        lobby: updatedLobby
-                    }
-                });
+                const currentPlayer = updatedLobby.players.find((player: Player) => player.name === username);
+                if (currentPlayer?.isSpectator) {
+                    // Spectators go to spectator view
+                    navigate('/spectator', {
+                        state: {
+                            lobby: updatedLobby
+                        }
+                    });
+                } else {
+                    // Players go to player view
+                    navigate('/player', {
+                        state: {
+                            username: username,
+                            lobby: updatedLobby
+                        }
+                    });
+                }
             });
 
             return () => {
@@ -138,6 +147,11 @@ function LobbyPage() {
                 }
                 socket.off('startGameResponse');
             });
+
+            // If current user is a spectator, redirect to spectator view with lobby data
+            if (playerState?.isSpectator) {
+                navigate('/spectator', { state: { lobby: lobbyState } });
+            }
         }
     }
 
@@ -397,26 +411,31 @@ function LobbyPage() {
                     <p>No players in this lobby yet.</p>
                 ) : (
                     <ul className="player-list">
-                        {lobbyState?.players.map((player: Player) => (
-                            <li key={player.id} className={player.name === username ? 'current-player' : ''}>
-                                <div className="player-info">
-                                    <span className="player-name">
-                                        {player.name} {player.name === username && '(You)'}
-                                        {player.isSpectator && ' 🥽 '}
-                                        {player.isHost && ' (Host)'}
-                                        {/* Color detection indicator */}
-                                        {player.r !== undefined && player.g !== undefined && player.b !== undefined 
-                                            ? ' ✅' 
-                                            : ' ⏳'
-                                        }
-                                    </span>
-                                    <div className="player-health">
-                                        <span className="health-text">{player.health}/{player.maxHealth} HP</span>
-                                        <div className="health-bar">
-                                            <div
-                                                className="health-fill"
-                                                style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
-                                            ></div>
+                        {lobbyState?.players.map((player: Player) => {
+                            // Compose color from r,g,b if present, else fallback
+                            const rgb = (typeof player.r === 'number' && typeof player.g === 'number' && typeof player.b === 'number')
+                                ? `rgb(${player.r},${player.g},${player.b})`
+                                : '#b8bb26';
+                            const rgbShadow = (typeof player.r === 'number' && typeof player.g === 'number' && typeof player.b === 'number')
+                                ? `rgba(${player.r},${player.g},${player.b},0.7)`
+                                : '#fabd2f';
+                            return (
+                                <li key={player.id} className={player.name === username ? 'current-player' : ''}>
+                                    <div className="player-info">
+                                        <span className="player-color-dot" style={{ background: rgb, boxShadow: `0 0 8px ${rgbShadow}`, display: 'inline-block', width: 18, height: 18, borderRadius: '50%', marginRight: 10, border: '2px solid #928374', verticalAlign: 'middle' }}></span>
+                                        <span className="player-name">
+                                            {player.name} {player.name === username && '(You)'}
+                                            {player.isSpectator && ' 🥽 '}
+                                            {player.isHost && ' (Host)'}
+                                        </span>
+                                        <div className="player-health">
+                                            <span className="health-text">{player.health}/{player.maxHealth} HP</span>
+                                            <div className="health-bar">
+                                                <div
+                                                    className="health-fill"
+                                                    style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
+                                                ></div>
+                                            </div>
                                         </div>
                                         {/* Show player's detected color if available */}
                                         {player.r !== undefined && player.g !== undefined && player.b !== undefined && (
@@ -434,9 +453,9 @@ function LobbyPage() {
                                             ></div>
                                         )}
                                     </div>
-                                </div>
-                            </li>
-                        ))}
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>
