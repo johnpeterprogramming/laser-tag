@@ -24,16 +24,23 @@ function LobbyPage() {
                 setPlayerState(currentPlayer || null);
             });
 
-            // Listen for game start - ALL players should navigate when game starts
+            // Listen for game start - route based on player type
             socket.on('gameStarted', (updatedLobby) => {
-                console.log('Game started! Navigating to player view...', { username, lobbyCode: updatedLobby.code });
-                // Navigate to player view when game starts
-                navigate('/player', {
-                    state: {
-                        username: username,
-                        lobby: updatedLobby
-                    }
-                });
+                const currentPlayer = updatedLobby.players.find(player => player.name === username);
+                if (currentPlayer?.isSpectator) {
+                    navigate('/spectator', {
+                        state: {
+                            lobby: updatedLobby
+                        }
+                    });
+                } else {
+                    navigate('/player', {
+                        state: {
+                            username: username,
+                            lobby: updatedLobby
+                        }
+                    });
+                }
             });
 
             return () => {
@@ -61,6 +68,11 @@ function LobbyPage() {
                 }
                 socket.off('startGameResponse');
             });
+
+            // If current user is a spectator, redirect to spectator view with lobby data
+            if (playerState?.isSpectator) {
+                navigate('/spectator', { state: { lobby: lobbyState } });
+            }
         }
     }
 
