@@ -27,6 +27,8 @@ export default function SpectatorView() {
     const { lobby } = (location.state as LocationState) || {};
     const [currentLobby, setCurrentLobby] = useState<Lobby | undefined>(lobby);
     const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+    const [gameEnded, setGameEnded] = useState<boolean>(false);
+    const [winner, setWinner] = useState<Player | null>(null);
 
     // Select first player by default
     useEffect(() => {
@@ -52,8 +54,15 @@ export default function SpectatorView() {
                 }
             });
 
+            socket.on("gameEnded", (data: { winner: Player; lobbyCode: string }) => {
+                console.log("Game ended! Winner:", data.winner.name);
+                setGameEnded(true);
+                setWinner(data.winner);
+            });
+
             return () => {
                 socket.off("lobbyUpdated");
+                socket.off("gameEnded");
             };
         }
     }, [lobby, selectedPlayer]);
@@ -159,6 +168,30 @@ export default function SpectatorView() {
                                 Status: {player.health > 0 ? "Alive" : "Eliminated"}
                             </p>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Winner Screen Overlay */}
+            {gameEnded && (
+                <div className="winner-overlay">
+                    <div className="winner-content">
+                        <div className="winner-icon">🏆</div>
+                        <h1 className="winner-title">
+                            {winner?.name} WINS!
+                        </h1>
+                        <p className="winner-subtitle">
+                            Game Over! {winner?.name} is the last player standing!
+                        </p>
+                        <button
+                            className="winner-button"
+                            onClick={() => {
+                                // Navigate back to start page
+                                window.location.href = '/';
+                            }}
+                        >
+                            Return to Lobby
+                        </button>
                     </div>
                 </div>
             )}
