@@ -22,15 +22,27 @@ function LobbyPage() {
     // @ts-ignore
     const [stream, setStream] = useState<MediaStream | null>(null);
     const [bodyPixModel, setBodyPixModel] = useState<bodyPix.BodyPix | null>(null);
-    // @ts-ignore
-    const [cocoModel, setCocoModel] = useState<cocoSsd.ObjectDetection | null>(null);
+    const [cocoModel, setCocoModel] = useState<cocoSsd.ObjectDetection | null>(null); // For future features
+    const [modelsLoaded, setModelsLoaded] = useState<boolean>(false);
     const selfieNotTaken = useRef(true); // Track if selfie has NOT been taken
+
+    // Suppress unused variable warning for cocoModel (reserved for future features)
+    void cocoModel;
+
+    // Load models before camera initialization
+    useEffect(() => {
+        loadModels();
+    }, []);
+
+    // Initialize camera after models are loaded
+    useEffect(() => {
+        if (modelsLoaded) {
+            initializeCamera();
+        }
+    }, [modelsLoaded]);
 
     // Handle lobby updates
     useEffect(() => {
-        initializeCamera();
-        loadModels();
-        
         if (lobby && username) {
             socket.on("lobbyUpdated", (lobby: Lobby) => {
                 setLobbyState(lobby);
@@ -76,11 +88,21 @@ function LobbyPage() {
 
     const loadModels = async () => {
         try {
-            const bodyPixModel = await bodyPix.load();
-            setBodyPixModel(bodyPixModel);
-            console.log('Models loaded successfully:', { cocoModel, bodyPixModel });
+            console.log("🤖 Loading AI models...");
+            
+            const [bodyPixModelResult, cocoModelResult] = await Promise.all([
+                bodyPix.load(),
+                cocoSsd.load()
+            ]);
+            
+            setBodyPixModel(bodyPixModelResult);
+            setCocoModel(cocoModelResult);
+            setModelsLoaded(true);
+            
+            console.log('✅ AI models loaded successfully');
         } catch (error) {
-            console.error('Error loading models:', error);
+            console.error('❌ Error loading AI models:', error);
+            setModelsLoaded(false);
         }
     };
 
@@ -106,6 +128,16 @@ function LobbyPage() {
 
     const handleStartGame = () => {
         if (lobbyState?.code) {
+            // Check if all players have shirt colors detected
+            const allPlayersHaveColors = lobbyState.players.every(player => 
+                player.r !== undefined && player.g !== undefined && player.b !== undefined
+            );
+
+            if (!allPlayersHaveColors) {
+                setErrorMessage("All players must take a selfie to detect their shirt color before starting the game.");
+                return;
+            }
+
             socket.emit('startGame', { lobbyCode: lobbyState.code });
 
             // Only handle error responses for the host
@@ -311,14 +343,35 @@ function LobbyPage() {
                 ref={canvasRef}
                 className="player-canvas"
             />)}
-            {/* Bottom button positioned over video */}
-            {lobbyState && selfieNotTaken.current&& (
+            {/* Bottom button positioned over video - only show after models are loaded */}
+            {lobbyState && selfieNotTaken.current && modelsLoaded && (
                 <button
                     className="bottom-button"
                     onClick={handleTakeSelfie}
                 >
                     Take a selfie to detect your shirt color
                 </button>
+            )}
+
+            {/* Loading overlay when models are loading */}
+            {lobbyState && selfieNotTaken.current && !modelsLoaded && (
+                <div className="loading-overlay" style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    color: "white",
+                    textAlign: "center",
+                    zIndex: 5,
+                    background: "rgba(0,0,0,0.8)",
+                    padding: "20px",
+                    borderRadius: "10px",
+                }}>
+                    <div>🤖 Loading AI Models...</div>
+                    <div style={{ fontSize: "0.8rem", marginTop: "10px" }}>
+                        Setting up color detection for shirt recognition
+                    </div>
+                </div>
             )}
 
             {/* Floating shapes */}
@@ -384,6 +437,21 @@ function LobbyPage() {
                                                 ></div>
                                             </div>
                                         </div>
+                                        {/* Show player's detected color if available */}
+                                        {player.r !== undefined && player.g !== undefined && player.b !== undefined && (
+                                            <div 
+                                                className="player-color-circle"
+                                                style={{ 
+                                                    backgroundColor: `rgb(${player.r}, ${player.g}, ${player.b})`,
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    borderRadius: '50%',
+                                                    marginLeft: '10px',
+                                                    border: '2px solid white'
+                                                }}
+                                                title={`Detected color: RGB(${player.r}, ${player.g}, ${player.b})`}
+                                            ></div>
+                                        )}
                                     </div>
                                 </li>
                             );
@@ -396,9 +464,21 @@ function LobbyPage() {
                 <button
                     onClick={handleStartGame}
                     className="start-game-button"
-                    disabled={lobbyState.players.length < 2} // Disable if not enough players
+                    disabled={
+                        lobbyState.players.length < 2 || 
+                        !lobbyState.players.every(player => 
+                            player.r !== undefined && player.g !== undefined && player.b !== undefined
+                        )
+                    }
                 >
-                    {lobbyState.players.length < 2 ? `Need ${2 - lobbyState.players.length} more players` : 'Start Game'}
+                    {lobbyState.players.length < 2 
+                        ? `Need ${2 - lobbyState.players.length} more players`
+                        : !lobbyState.players.every(player => 
+                            player.r !== undefined && player.g !== undefined && player.b !== undefined
+                        )
+                        ? "Waiting for all players to detect shirt colors"
+                        : 'Start Game'
+                    }
                 </button>
             )}
             {!(playerState?.isHost ?? false) && ( // This part won't show with isLobbyCreator true, but kept for future

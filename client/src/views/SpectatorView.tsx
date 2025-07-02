@@ -25,7 +25,6 @@ export default function SpectatorView() {
     const location = useLocation();
     const { lobby } = (location.state as LocationState) || {};
     const [currentLobby, setCurrentLobby] = useState<Lobby | undefined>(lobby);
-
     useEffect(() => {
         if (lobby) {
             socket.on("lobbyUpdated", (updatedLobby: Lobby) => {
@@ -33,6 +32,7 @@ export default function SpectatorView() {
             });
             return () => {
                 socket.off("lobbyUpdated");
+                socket.off("gameEnded");
             };
         }
     }, [lobby]);
