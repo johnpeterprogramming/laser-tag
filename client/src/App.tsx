@@ -6,12 +6,12 @@ import LobbyPage from './views/LobbyPage';
 
 
 export default function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<StartPage />} />
-      <Route path="/lobby" element={<LobbyPage />} />
-      <Route path="/player" element={<PlayerView />} />
-      <Route path="/spectator" element={<SpectatorView />} />
-    </Routes>
-  )
+    return (
+        <Routes>
+            <Route path="/" element={<StartPage />} />
+            <Route path="/lobby" element={<LobbyPage />} />
+            <Route path="/player" element={<PlayerView />} />
+            <Route path="/spectator" element={<SpectatorView />} />
+        </Routes>
+    )
 }

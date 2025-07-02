@@ -3,115 +3,435 @@ import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import * as bodyPix from "@tensorflow-models/body-pix";
 import "@tensorflow/tfjs";
 import "./PlayerView.css";
+import { socket } from "../socket";
+import { useLocation } from "react-router-dom";
 
-// export default function PlayerView() {
-//   const videoRef = useRef();
-//   const canvasRef = useRef();
-//   const tempCanvasRef = useRef();
-//   const [particles, setParticles] = useState([]);
-//   const [bodyPixNet, setBodyPixNet] = useState(null);
-//   const predictionsRef = useRef([]);
-
-//   useEffect(() => {
-//     let model;
-//     let bodyPixModel;
-interface Particle {
-  id: number;
+interface LocationState {
+    username: string;
+    lobby: Lobby;
 }
 
-function PlayerView() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [bodyPixNet, setBodyPixNet] = useState<bodyPix.BodyPix | null>(null);
-  const predictionsRef = useRef<cocoSsd.DetectedObject[]>([]);
+interface Particle {
+    id: number;
+}
 
-  useEffect(() => {
-    let model: cocoSsd.ObjectDetection;
-    let modelLoaded = false;
-    let stream: MediaStream;
-    let animationId: number;
+interface Player {
+    id: string;
+    name: string;
+    health: number;
+}
 
-    const canvas = (predictions: cocoSsd.DetectedObject[]) => {
-      if (!canvasRef.current) return;
-      
-      const ctx = canvasRef.current.getContext("2d");
-      if (!ctx) return;
+interface Lobby {
+    code: string;
+    players: Player[];
+    state: string;
+}
 
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      // crosshair
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(canvasRef.current.width / 2, canvasRef.current.height / 2 - 11);
-      ctx.lineTo(canvasRef.current.width / 2, canvasRef.current.height / 2 + 11);
-      ctx.moveTo(canvasRef.current.width / 2 - 11, canvasRef.current.height / 2);
-      ctx.lineTo(canvasRef.current.width / 2 + 11, canvasRef.current.height / 2);
-      ctx.stroke();
-      ctx.strokeStyle = "white";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(canvasRef.current.width / 2, canvasRef.current.height / 2 - 10);
-      ctx.lineTo(canvasRef.current.width / 2, canvasRef.current.height / 2 + 10);
-      ctx.moveTo(canvasRef.current.width / 2 - 10, canvasRef.current.height / 2);
-      ctx.lineTo(canvasRef.current.width / 2 + 10, canvasRef.current.height / 2);
-      ctx.stroke();
-      // boxes
-      predictions.forEach((pred) => {
-        if (pred.class === "person" && pred.score > 0.5) {
-          ctx.strokeStyle = "red";
-          ctx.lineWidth = 2;
-          ctx.strokeRect(...pred.bbox);
-          ctx.font = "16px Arial";
-          ctx.fillStyle = "red";
-        }
-      });
-    };
+export default function PlayerView() {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [particles, setParticles] = useState<Particle[]>([]);
+    const [bodyPixNet, setBodyPixNet] = useState<bodyPix.BodyPix | null>(null);
+    const predictionsRef = useRef<cocoSsd.DetectedObject[]>([]);
 
-    const loadModel = async () => {
-      model = await cocoSsd.load();
-      const bpNet = await bodyPix.load();
-      modelLoaded = true;
-      setBodyPixNet(bpNet);
-      detectFrame();
-    };
+    const [health, setHealth] = useState<number>(100);
+    const [maxHealth] = useState<number>(100);
+    const [cameraRequested, setCameraRequested] = useState<boolean>(true); // Start with camera requested
+    const [cameraLoading, setCameraLoading] = useState<boolean>(true); // Start with camera loading
+    const [error, setError] = useState<string | null>(null);
+    const [recoil, setRecoil] = useState<boolean>(false);
 
-    const detectFrame = async () => {
-      if (videoRef.current && modelLoaded) {
-        const predictions = await model.detect(videoRef.current);
-        predictionsRef.current = predictions;
-        if (canvasRef.current) {
-          canvas(predictions);
-        }
-      }
-      animationId = requestAnimationFrame(detectFrame);
-    };
+    const location = useLocation();
+    const { username, lobby } = (location.state as LocationState) || {};
+    const lobbyCode = lobby?.code || "";
+    const [currentLobby, setCurrentLobby] = useState<Lobby | undefined>(lobby);
 
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "environment" } })
-      .then((mediaStream) => {
-        stream = mediaStream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.onloadedmetadata = () => {
-            if (canvasRef.current && videoRef.current) {
-              canvasRef.current.width = videoRef.current.videoWidth;
-              canvasRef.current.height = videoRef.current.videoHeight;
+    // Debug logging
+    // console.log('PlayerView render:', { username, lobby, lobbyCode, currentLobby });
+
+    // Add debug state for camera status
+    const [cameraDebug, setCameraDebug] = useState<{
+        hasStream: boolean;
+        hasVideoElement: boolean;
+        videoWidth: number;
+        videoHeight: number;
+        readyState: number;
+        error: string | null;
+    }>({
+        hasStream: false,
+        hasVideoElement: false,
+        videoWidth: 0,
+        videoHeight: 0,
+        readyState: 0,
+        error: null
+    });
+
+    // Update debug info periodically and immediately when video changes
+    useEffect(() => {
+        const updateDebugInfo = () => {
+            if (videoRef.current) {
+                setCameraDebug({
+                    hasStream: !!videoRef.current.srcObject,
+                    hasVideoElement: !!videoRef.current,
+                    videoWidth: videoRef.current.videoWidth || 0,
+                    videoHeight: videoRef.current.videoHeight || 0,
+                    readyState: videoRef.current.readyState || 0,
+                    error: error
+                });
             }
-          };
-          loadModel();
-        }
-      })
-      .catch((error) => {
-        console.error("Error accessing camera:", error);
-      });
+        };
 
-    return () => {
-      if (animationId) cancelAnimationFrame(animationId);
-      if (stream) stream.getTracks().forEach((track) => track.stop());
-    };
-  }, []);
-  const [recoil, setRecoil] = useState(false);
+        // Update immediately
+        updateDebugInfo();
+
+        // Then update every second
+        const debugInterval = setInterval(updateDebugInfo, 1000);
+
+        return () => clearInterval(debugInterval);
+    }, [error]);
+
+    // Automatically start camera initialization when component mounts
+    useEffect(() => {
+        initCamera();
+    }, []);
+
+    // Camera initialization function (automatically called on mount)
+    const initCamera = async () => {
+        if (cameraRequested && !cameraLoading) return; // Prevent multiple requests
+
+        console.log('🎯 Starting automatic camera initialization');
+        setCameraRequested(true);
+        setCameraLoading(true);
+
+        let model: cocoSsd.ObjectDetection;
+        let modelLoaded = false;
+        let stream: MediaStream;
+        // let animationId: number;
+        let cameraTimeout: NodeJS.Timeout;
+
+        // Set a timeout to clear camera loading state if camera/model fails
+        cameraTimeout = setTimeout(() => {
+            console.log('⏰ Camera loading timeout reached');
+            setCameraLoading(false);
+        }, 10000); // Longer timeout for camera
+
+        const canvas = (predictions: cocoSsd.DetectedObject[]) => {
+            if (!canvasRef.current) return;
+            const ctx = canvasRef.current.getContext("2d");
+            if (!ctx) return;
+
+            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+
+            // Draw crosshair
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(canvasRef.current.width / 2, canvasRef.current.height / 2 - 11);
+            ctx.lineTo(canvasRef.current.width / 2, canvasRef.current.height / 2 + 11);
+            ctx.moveTo(canvasRef.current.width / 2 - 11, canvasRef.current.height / 2);
+            ctx.lineTo(canvasRef.current.width / 2 + 11, canvasRef.current.height / 2);
+            ctx.stroke();
+
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(canvasRef.current.width / 2, canvasRef.current.height / 2 - 10);
+            ctx.lineTo(canvasRef.current.width / 2, canvasRef.current.height / 2 + 10);
+            ctx.moveTo(canvasRef.current.width / 2 - 10, canvasRef.current.height / 2);
+            ctx.lineTo(canvasRef.current.width / 2 + 10, canvasRef.current.height / 2);
+            ctx.stroke();
+
+            // Draw detection boxes for people
+            predictions.forEach((pred) => {
+                if (pred.class === "person" && pred.score > 0.5) {
+                    ctx.strokeStyle = "red";
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(...pred.bbox);
+                    ctx.font = "16px Arial";
+                    ctx.fillStyle = "red";
+                }
+            });
+        };
+
+        const loadModel = async () => {
+            try {
+                console.log('Loading TensorFlow model...');
+                model = await cocoSsd.load();
+
+                const bpNet = await bodyPix.load();
+                modelLoaded = true;
+                setBodyPixNet(bpNet);
+
+                console.log('TensorFlow model loaded successfully');
+                // Start detection loop only if video is ready
+                if (videoRef.current && videoRef.current.readyState >= 2) {
+                    detectFrame();
+                }
+            } catch (error) {
+                console.error('Error loading TensorFlow model:', error);
+                // Continue without model detection
+                modelLoaded = false;
+            }
+        };
+
+        const detectFrame = async () => {
+            if (videoRef.current && modelLoaded && videoRef.current.readyState >= 2) {
+                try {
+                    const predictions = await model.detect(videoRef.current);
+                    predictionsRef.current = predictions;
+
+                    // Could be unnecessary, but fine for now
+                    if (canvasRef.current) {
+                      canvas(predictions);
+                    }
+                } catch (error) {
+                    console.error('Detection error:', error);
+                }
+            }
+            requestAnimationFrame(detectFrame);
+        };
+
+        const setupVideoAndCanvas = (): boolean => {
+            if (!videoRef.current || !canvasRef.current) return false;
+
+            console.log('Setting up video and canvas, readyState:', videoRef.current.readyState, 'dimensions:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
+
+            // Check if video has dimensions (means it's loaded)
+            if (videoRef.current.videoWidth > 0 && videoRef.current.videoHeight > 0) {
+                canvasRef.current.width = videoRef.current.videoWidth;
+                canvasRef.current.height = videoRef.current.videoHeight;
+                console.log('✅ Canvas dimensions set:', canvasRef.current.width, canvasRef.current.height);
+                clearTimeout(cameraTimeout);
+                setCameraLoading(false);
+                loadModel();
+                return true;
+            }
+            return false;
+        };
+
+        try {
+            console.log('🎥 Requesting camera access...');
+
+            // TODO: Remove unnecessary looping???
+            const cameraConfigs = [
+                {
+                    video: {
+                        facingMode: "environment",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                },
+                {
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                },
+                {
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                },
+                {
+                    video: true
+                }
+            ];
+
+            let streamResult: MediaStream | null = null;
+            let lastError: Error | null = null;
+
+            for (const config of cameraConfigs) {
+                try {
+                    console.log('Trying camera config:', config);
+                    streamResult = await navigator.mediaDevices.getUserMedia(config);
+                    console.log('✅ Camera stream obtained with config:', config);
+                    break;
+                } catch (err) {
+                    console.log('❌ Camera config failed:', config, err);
+                    lastError = err as Error;
+                    continue;
+                }
+            }
+
+            if (!streamResult) {
+                throw lastError || new Error('No camera configuration worked');
+            }
+
+            stream = streamResult;
+
+            if (videoRef.current) {
+                console.log('🎬 Assigning stream to video element...');
+                videoRef.current.srcObject = stream;
+
+                // Force video properties immediately
+                videoRef.current.muted = true;
+                videoRef.current.playsInline = true;
+                videoRef.current.autoplay = true;
+
+                // Log stream assignment
+                console.log('✅ Stream assigned to video element:', {
+                    hasStream: !!videoRef.current.srcObject,
+                    streamActive: stream.active,
+                    tracks: stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState }))
+                });
+
+                // Force debug update immediately
+                setCameraDebug(prev => ({
+                    ...prev,
+                    hasStream: !!videoRef.current?.srcObject,
+                    hasVideoElement: !!videoRef.current,
+                }));
+
+                // Wait a bit for the stream to be processed by the video element
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Try to set up immediately (for pre-granted permissions)
+                let setupSuccess = setupVideoAndCanvas();
+
+                if (!setupSuccess) {
+                    console.log('📱 Video not ready yet, setting up event listeners and polling...');
+
+                    const handleVideoReady = () => {
+                        console.log('🎬 Video ready event triggered, readyState:', videoRef.current?.readyState);
+                        if (setupVideoAndCanvas()) {
+                            console.log('✅ Setup successful via event listener');
+                            // Remove listeners once successful
+                            videoRef.current?.removeEventListener('loadeddata', handleVideoReady);
+                            videoRef.current?.removeEventListener('loadedmetadata', handleVideoReady);
+                            videoRef.current?.removeEventListener('canplay', handleVideoReady);
+                            videoRef.current?.removeEventListener('playing', handleVideoReady);
+                        }
+                    };
+
+                    // Listen for multiple events to catch when video is ready
+                    videoRef.current.addEventListener('loadeddata', handleVideoReady);
+                    videoRef.current.addEventListener('loadedmetadata', handleVideoReady);
+                    videoRef.current.addEventListener('canplay', handleVideoReady);
+                    videoRef.current.addEventListener('playing', handleVideoReady);
+
+                    // More aggressive polling for video readiness
+                    let pollCount = 0;
+                    const maxPolls = 100; // Increased to 10 seconds
+                    const pollInterval = setInterval(() => {
+                        pollCount++;
+                        const currentDimensions = `${videoRef.current?.videoWidth || 0}x${videoRef.current?.videoHeight || 0}`;
+                        const currentReadyState = videoRef.current?.readyState || 0;
+
+                        console.log(`📊 Poll ${pollCount}/${maxPolls}: Dimensions=${currentDimensions}, ReadyState=${currentReadyState}, HasSrcObject=${!!videoRef.current?.srcObject}`);
+
+                        if (setupVideoAndCanvas()) {
+                            console.log('✅ Video setup successful via polling');
+                            clearInterval(pollInterval);
+                            // Remove event listeners
+                            videoRef.current?.removeEventListener('loadeddata', handleVideoReady);
+                            videoRef.current?.removeEventListener('loadedmetadata', handleVideoReady);
+                            videoRef.current?.removeEventListener('canplay', handleVideoReady);
+                            videoRef.current?.removeEventListener('playing', handleVideoReady);
+                        } else if (pollCount >= maxPolls) {
+                            console.log('⚠️ Polling timeout reached, forcing camera loading clear');
+                            clearInterval(pollInterval);
+                            clearTimeout(cameraTimeout);
+                            setCameraLoading(false);
+                            console.log('💡 Final state check:', {
+                                hasVideoRef: !!videoRef.current,
+                                hasCanvasRef: !!canvasRef.current,
+                                hasStream: !!videoRef.current?.srcObject,
+                                videoDimensions: `${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}`,
+                                readyState: videoRef.current?.readyState
+                            });
+                        }
+                    }, 100);
+                } else {
+                    console.log('✅ Video setup successful immediately');
+                }
+
+                // Try to play the video with more aggressive approach
+                const playVideo = async () => {
+                    try {
+                        console.log('🎬 Attempting to play video...');
+                        if (videoRef.current) {
+                            await videoRef.current.play();
+                            console.log('✅ Video playing successfully');
+                        }
+                    } catch (playError) {
+                        console.log('⚠️ Video play failed, retrying...', playError);
+                        // Retry after a short delay
+                        setTimeout(() => {
+                            videoRef.current?.play().catch(e =>
+                                console.log('❌ Final video play attempt failed:', e)
+                            );
+                        }, 500);
+                    }
+                };
+
+                // Start playing immediately and also after a delay
+                playVideo();
+                setTimeout(playVideo, 200);
+            } else {
+                console.log('❌ No video element found');
+            }
+        } catch (error) {
+            console.error('❌ Error accessing camera:', error);
+            clearTimeout(cameraTimeout);
+            setCameraLoading(false);
+            setError('Camera access denied. Please allow camera access and refresh the page.');
+        }
+    };    
+    // Join socket room and initialize player data
+    useEffect(() => {
+        if (lobbyCode && username) {
+            // Join the lobby room to receive updates
+            socket.emit('joinRoom', { lobbyCode });
+
+            // Initialize health from lobby data if available
+            if (currentLobby) {
+                const currentPlayer = currentLobby.players.find((p: Player) => p.name === username);
+                if (currentPlayer) {
+                    setHealth(currentPlayer.health);
+                }
+            }
+        }
+    }, [lobbyCode, username, currentLobby]);
+
+    // Socket listeners for health events
+    useEffect(() => {
+        const handlePlayerHit = (data: { targetId: string; targetHealth: number }) => {
+            if (data.targetId === socket.id) {
+                setHealth(data.targetHealth);
+                // Add hit effect
+                document.body.style.background = "rgba(255, 0, 0, 0.3)";
+                setTimeout(() => {
+                    document.body.style.background = "";
+                }, 200);
+            }
+        };
+
+        const handlePlayerHealed = (data: { playerId: string; newHealth: number }) => {
+            if (data.playerId === socket.id) {
+                setHealth(data.newHealth);
+            }
+        };
+
+        const handleLobbyUpdated = (updatedLobby: Lobby) => {
+            setCurrentLobby(updatedLobby);
+            // Update our health from lobby state
+            const currentPlayer = updatedLobby.players.find(p => p.id === socket.id);
+            if (currentPlayer) {
+                setHealth(currentPlayer.health);
+            }
+        };
+
+        socket.on('playerHit', handlePlayerHit);
+        socket.on('playerHealed', handlePlayerHealed);
+        socket.on('lobbyUpdated', handleLobbyUpdated);
+
+        return () => {
+            socket.off('playerHit', handlePlayerHit);
+            socket.off('playerHealed', handlePlayerHealed);
+            socket.off('lobbyUpdated', handleLobbyUpdated);
+        };
+    }, []);
 
   function getTargetPrediction(predictions: cocoSsd.DetectedObject[]): cocoSsd.DetectedObject[] {
     if (!canvasRef.current) return [];
@@ -240,56 +560,256 @@ function PlayerView() {
   }
 }
 
-  
+    const handleShoot = async () => {
+        setRecoil(true);
+        setTimeout(() => setRecoil(false), 100); // reset after 100ms
 
-  const handleShoot = async () => {
-    setRecoil(true);
-    const targets = getTargetPrediction(predictionsRef.current);
-    if (targets.length > 0 && videoRef.current) {
-      for (const target of targets) {
-        console.log("Hit target:", target);
-        const color = await segmentShirtColor(videoRef.current, target.bbox);
-        console.log("Segmented shirt color:", color);
-        // Here you can handle the hit logic, e.g., send a hit event to the server
-      }
-    }
-    setTimeout(() => setRecoil(false), 100); // reset after 100ms
+        const targets = getTargetPrediction(predictionsRef.current);
+        if (targets.length > 0 && videoRef.current) {
+          for (const target of targets) {
+            // console.log("Hit target:", target);
+            const color = await segmentShirtColor(videoRef.current, target.bbox);
+            // console.log("Segmented shirt color:", color);
+            // Here you can handle the hit logic, e.g., send a hit event to the server
+          }
+        }
 
-    const id = Date.now();
-    setParticles((prev) => [...prev, { id }]);
+        const id = Date.now();
+        setParticles((prev: Particle[]) => [...prev, { id }]);
 
-    // Remove after 400ms
-    setTimeout(() => {
-      setParticles((prev) => prev.filter((p) => p.id !== id));
-    }, 400);
-  };
+        // Check if we hit a player based on object detection
+        if (predictionsRef.current && lobbyCode) {
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
 
-  return (
-    <div className="player-wrapper" onClick={handleShoot}>
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        className="player-video"
-      />
-      <canvas
-        ref={canvasRef}
-        className="player-canvas"
-      />
+            // Check if crosshair is over a detected person
+            const hitTarget = predictionsRef.current.find((pred: cocoSsd.DetectedObject) => {
+                if (pred.class === "person" && pred.score > 0.5) {
+                    const [x, y, width, height] = pred.bbox;
+                    return centerX >= x && centerX <= x + width &&
+                        centerY >= y && centerY <= y + height;
+                }
+                return false;
+            });
 
-      <div className="gun-overlay">
-        <img
-          src="./gun.png"
-          alt="Gun"
-          className={`gun-image ${recoil ? "shoot-recoil" : ""}`}
-        />
-      </div>
+            if (hitTarget) {
+                // For demo purposes, simulate hitting a random player
+                // console.log("Player hit!");
+                const availablePlayers = currentLobby?.players?.filter((p: Player) => p.id !== socket.id) || [];
+                // console.log(availablePlayers);
+                if (availablePlayers.length > 0) {
+                    const randomPlayer = availablePlayers[Math.floor(Math.random() * availablePlayers.length)];
+                    // console.log("Shooting:" + randomPlayer.name);
+                    socket.emit('playerShoot', {
+                        targetPlayerId: randomPlayer.id,
+                        lobbyCode: lobbyCode,
+                        damage: 25
+                    });
+                }
+            }
+            // else console.log("Player has not been hit!")
+        }
 
-      {particles.map((particle) => (
-        <div key={particle.id} className="shoot-particle" />
-      ))}
-    </div>
-  );
+        // Remove particle after 400ms
+        setTimeout(() => {
+            setParticles((prev: Particle[]) => prev.filter((p: Particle) => p.id !== id));
+        }, 400);
+    };
+
+    const handleHeal = () => {
+        if (lobbyCode) {
+            socket.emit('healPlayer', {
+                playerId: socket.id,
+                lobbyCode: lobbyCode,
+                healAmount: 25
+            });
+        }
+    };
+
+    // Main game interface
+    return (
+        <div className="player-wrapper" onClick={handleShoot}>
+            {/* Camera Debug Panel - only show if loading or in development */}
+            {(cameraLoading || process.env.NODE_ENV === 'development') && (
+                <div style={{
+                    position: 'fixed',
+                    top: '10px',
+                    right: '10px',
+                    background: 'rgba(0,0,0,0.8)',
+                    color: 'white',
+                    padding: '10px',
+                    borderRadius: '5px',
+                    fontSize: '12px',
+                    zIndex: 1000,
+                    fontFamily: 'monospace'
+                }}>
+                    <div>📊 Camera Debug</div>
+                    <div>Stream: {cameraDebug.hasStream ? '✅' : '❌'}</div>
+                    <div>Video Element: {cameraDebug.hasVideoElement ? '✅' : '❌'}</div>
+                    <div>Dimensions: {cameraDebug.videoWidth}x{cameraDebug.videoHeight}</div>
+                    <div>Ready State: {cameraDebug.readyState}</div>
+                    <div>Camera Loading: {cameraLoading ? 'Yes' : 'No'}</div>
+                    {cameraDebug.error && <div>Error: {cameraDebug.error}</div>}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.reload();
+                        }}
+                        style={{
+                            marginTop: '5px',
+                            padding: '2px 6px',
+                            fontSize: '10px',
+                            background: '#444',
+                            color: 'white',
+                            border: '1px solid #666',
+                            borderRadius: '3px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        🔄 Retry
+                    </button>
+                </div>
+            )}
+
+            {/* Health Bar */}
+            <div className="player-health-overlay">
+                <div className="health-bar-container">
+                    <div className="health-labels">
+                        <span>Health</span>
+                        <span>{health}/{maxHealth}</span>
+                    </div>
+                    <div className="health-bar-track">
+                        <div
+                            className="health-bar-fill"
+                            style={{ width: `${(health / maxHealth) * 100}%` }}
+                        ></div>
+                    </div>
+                </div>
+                <button
+                    className="heal-button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleHeal();
+                    }}
+                    disabled={health >= maxHealth}
+                >
+                    Heal (+25)
+                </button>
+            </div>
+
+            {/* Debug panel for testing health system */}
+            {currentLobby?.state === 'active' && (
+                <div className="debug-panel">
+                    <h3>Debug Controls</h3>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (lobbyCode && currentLobby) {
+                                // Simulate taking damage
+                                const randomPlayer = currentLobby?.players[Math.floor(Math.random() * currentLobby.players.length)];
+                                if (randomPlayer) {
+                                    socket.emit('playerShoot', {
+                                        targetPlayerId: randomPlayer.id,
+                                        lobbyCode: lobbyCode,
+                                        damage: 25
+                                    });
+                                }
+                            }
+                        }}
+                        className="debug-button"
+                    >
+                        Simulate Hit (Random Player)
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (lobbyCode) {
+                                socket.emit('resetPlayerHealth', {
+                                    playerId: socket.id,
+                                    lobbyCode: lobbyCode
+                                });
+                            }
+                        }}
+                        className="debug-button"
+                    >
+                        Reset My Health
+                    </button>
+                </div>
+            )}
+
+            {/* Video stream and canvas for object detection */}
+            <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="player-video"
+                style={{
+                    background: '#000',
+                    display: 'block' // Ensure video is visible
+                }}
+            />
+            <canvas
+                ref={canvasRef}
+                className="player-canvas"
+            />
+
+            {/* Gun overlay */}
+            <div className="gun-overlay">
+                <img
+                    src="./gun.png"
+                    alt="Gun"
+                    className={`gun-image ${recoil ? "shoot-recoil" : ""}`}
+                />
+            </div>
+
+            {/* Shoot particles */}
+            {particles.map((particle) => (
+                <div key={particle.id} className="shoot-particle" />
+            ))}
+
+            {/* Camera status indicator - show loading or error states */}
+            {(cameraLoading || error) && !videoRef.current?.srcObject && (
+                <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    color: 'white',
+                    textAlign: 'center',
+                    zIndex: 5,
+                    background: 'rgba(0,0,0,0.8)',
+                    padding: '20px',
+                    borderRadius: '10px'
+                }}>
+                    {error ? (
+                        <>
+                            <div>❌ {error}</div>
+                            <button
+                                onClick={() => window.location.reload()}
+                                style={{
+                                    marginTop: '1rem',
+                                    padding: '0.5rem 1rem',
+                                    background: '#cc241d',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Try Again
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <div>📹 Setting up Camera...</div>
+                            <div style={{ fontSize: '0.8rem', marginTop: '10px' }}>
+                                Please allow camera access when prompted
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 }
-
-export default PlayerView;
