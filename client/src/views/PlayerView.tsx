@@ -542,6 +542,10 @@ export default function PlayerView() {
 
         let closestPlayer: Player | null = null;
         let minDistance = Infinity;
+        
+        // Maximum allowed color distance for a valid match
+        // Lower values = more strict matching, higher values = more lenient
+        const MAX_COLOR_DISTANCE = 100; // Adjust this value based on testing
 
         const otherPlayers = currentLobby.players;
         // Filter out the current player (can't shoot yourself)
@@ -567,7 +571,8 @@ export default function PlayerView() {
                     `(detected: rgb(${detectedRGB.r},${detectedRGB.g},${detectedRGB.b}), player: rgb(${playerColor.r},${playerColor.g},${playerColor.b}))`,
                 );
 
-                if (distance < minDistance) {
+                // Only consider this player if the distance is within acceptable range
+                if (distance < minDistance && distance <= MAX_COLOR_DISTANCE) {
                     minDistance = distance;
                     closestPlayer = player;
                 }
@@ -580,7 +585,7 @@ export default function PlayerView() {
             );
         } else {
             console.log(
-                `🎯 No color match found for detected color: ${detectedColor}`,
+                `🎯 No valid color match found for detected color: ${detectedColor} (all distances exceeded ${MAX_COLOR_DISTANCE})`,
             );
         }
 
