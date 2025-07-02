@@ -725,6 +725,9 @@ export default function PlayerView() {
     }
 
     const handleShoot = async () => {
+        // Don't allow shooting if player is dead
+        if (isDead) return;
+        
         setRecoil(true);
         setTimeout(() => setRecoil(false), 100); // reset after 100ms
 
