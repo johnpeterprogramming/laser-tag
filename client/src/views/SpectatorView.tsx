@@ -60,55 +60,62 @@ export default function SpectatorView() {
             </header>
             <main className="dashboard-main-grid">
                 {currentLobby?.players && currentLobby.players.length > 0 ? (
-                    currentLobby.players.map((p) => (
-                        <div className="dashboard-player-card" key={p.id}>
-                            <div className="player-avatar-row">
-                                <img
-                                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=222b3a&color=fff&size=48`}
-                                    alt={p.name}
-                                    className="player-avatar"
-                                />
-                                <span className="player-name">{p.name}</span>
-                            </div>
-                            <div className="player-info-row">
-                                <span className="player-colour-label">Colour</span>
-                                <span className="player-colour-dot" style={{ background: p.colour || '#b8bb26', boxShadow: `0 0 8px ${p.colour || '#fabd2f'}` }}></span>
-                            </div>
-                            <div className="player-info-row" style={{ flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
-                                <span className="player-health-label">Health</span>
-                                <div className="health-bar-spectator" style={{ width: '100%', maxWidth: 120, height: 14, background: '#d5c4a1', borderRadius: 8, marginTop: 4, marginBottom: 2, boxShadow: 'inset 0 2px 4px rgba(60,56,54,0.18)' }}>
-                                    <div
-                                        className="health-bar-fill-spectator"
-                                        style={{
-                                            width: `${(p.health / (p.maxHealth || 100)) * 100}%`,
-                                            height: '100%',
+                    currentLobby.players.map((p: any) => {
+                        // Use RGB color for avatar border and color dot
+                        const rgb = (typeof p.r === 'number' && typeof p.g === 'number' && typeof p.b === 'number')
+                            ? `rgb(${p.r},${p.g},${p.b})`
+                            : '#b8bb26';
+                        return (
+                            <div className="dashboard-player-card" key={p.id}>
+                                <div className="player-avatar-row">
+                                    <img
+                                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=222b3a&color=fff&size=48`}
+                                        alt={p.name}
+                                        className="player-avatar"
+                                        style={{ border: `2px solid ${rgb}` }}
+                                    />
+                                    <span className="player-name">{p.name}</span>
+                                </div>
+                                <div className="player-info-row">
+                                    <span className="player-colour-label">Colour</span>
+                                    <span className="player-colour-dot" style={{ background: rgb }}></span>
+                                </div>
+                                <div className="player-info-row" style={{ flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+                                    <span className="player-health-label">Health</span>
+                                    <div className="health-bar-spectator" style={{ width: '100%', maxWidth: 120, height: 14, background: '#d5c4a1', borderRadius: 8, marginTop: 4, marginBottom: 2, boxShadow: 'inset 0 2px 4px rgba(60,56,54,0.18)' }}>
+                                        <div
+                                            className="health-bar-fill-spectator"
+                                            style={{
+                                                width: `${(p.health / (p.maxHealth || 100)) * 100}%`,
+                                                height: '100%',
+                                                background: '#cc241d',
+                                                borderRadius: 8,
+                                                transition: 'width 0.3s',
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <span className="player-health-value" style={{ color: '#cc241d', fontWeight: 'bold', fontSize: '0.98em' }}>{p.health}{typeof p.maxHealth === 'number' ? `/${p.maxHealth}` : ''}</span>
+                                </div>
+                                {p.health === 0 && (
+                                    <div className="player-state-row" style={{ marginTop: 12, width: '100%', display: 'flex', justifyContent: 'center' }}>
+                                        <span className="player-state-label" style={{
                                             background: '#cc241d',
+                                            color: '#fff',
                                             borderRadius: 8,
-                                            transition: 'width 0.3s',
-                                        }}
-                                    ></div>
-                                </div>
-                                <span className="player-health-value" style={{ color: '#cc241d', fontWeight: 'bold', fontSize: '0.98em' }}>{p.health}{typeof p.maxHealth === 'number' ? `/${p.maxHealth}` : ''}</span>
+                                            padding: '4px 16px',
+                                            fontWeight: 700,
+                                            fontSize: '1.05em',
+                                            letterSpacing: 1,
+                                            boxShadow: '0 0 8px #cc241d',
+                                            border: '2px solid #cc241d',
+                                            textTransform: 'uppercase',
+                                            transition: 'all 0.2s',
+                                        }}>Eliminated</span>
+                                    </div>
+                                )}
                             </div>
-                            {p.health === 0 && (
-                                <div className="player-state-row" style={{ marginTop: 12, width: '100%', display: 'flex', justifyContent: 'center' }}>
-                                    <span className="player-state-label" style={{
-                                        background: '#cc241d',
-                                        color: '#fff',
-                                        borderRadius: 8,
-                                        padding: '4px 16px',
-                                        fontWeight: 700,
-                                        fontSize: '1.05em',
-                                        letterSpacing: 1,
-                                        boxShadow: '0 0 8px #cc241d',
-                                        border: '2px solid #cc241d',
-                                        textTransform: 'uppercase',
-                                        transition: 'all 0.2s',
-                                    }}>Eliminated</span>
-                                </div>
-                            )}
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
                     <div style={{ color: '#b57614', fontWeight: 500, textAlign: 'center', gridColumn: '1/-1' }}>No players in lobby</div>
                 )}
