@@ -349,9 +349,12 @@ function LobbyPage() {
                     className="bottom-button"
                     onClick={handleTakeSelfie}
                 >
-                    Take a selfie to detect your shirt color
+                    Have someone scan you in by taking a picture to detect your shirt color. Make sure your shirt is clearly visible.
                 </button>
             )}
+            {lobbyState && selfieNotTaken.current && modelsLoaded && (<p className="selfie-instructions">
+                
+            </p>)}
 
             {/* Loading overlay when models are loading */}
             {lobbyState && selfieNotTaken.current && !modelsLoaded && (
