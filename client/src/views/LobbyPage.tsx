@@ -89,16 +89,16 @@ function LobbyPage() {
     const loadModels = async () => {
         try {
             console.log("🤖 Loading AI models...");
-            
+
             const [bodyPixModelResult, cocoModelResult] = await Promise.all([
                 bodyPix.load(),
                 cocoSsd.load()
             ]);
-            
+
             setBodyPixModel(bodyPixModelResult);
             setCocoModel(cocoModelResult);
             setModelsLoaded(true);
-            
+
             console.log('✅ AI models loaded successfully');
         } catch (error) {
             console.error('❌ Error loading AI models:', error);
@@ -129,7 +129,7 @@ function LobbyPage() {
     const handleStartGame = () => {
         if (lobbyState?.code) {
             // Check if all players have shirt colors detected
-            const allPlayersHaveColors = lobbyState.players.every(player => 
+            const allPlayersHaveColors = lobbyState.players.every(player =>
                 player.r !== undefined && player.g !== undefined && player.b !== undefined
             );
 
@@ -377,13 +377,18 @@ function LobbyPage() {
             {/* Floating shapes */}
             <div className="floating-shapes">
                 <div className="shape">🎮</div>
-                <div className="shape">🟨</div> {/* replaced red square with lighter shape */}
+                <div className="shape">🟨</div>
                 <div className="shape">🔺</div>
                 <div className="shape">🟡</div>
+                <div className="shape">⚡</div>
+                <div className="shape">💥</div>
+                <div className="shape">🎯</div>
 
-                {/* Gun Target Shapes */}
+                {/* Enhanced Gun Target Shapes */}
                 <svg className="svg-target" viewBox="0 0 100 100" aria-hidden="true">
                     <circle cx="50" cy="50" r="40" stroke="#cc241d" strokeWidth="3" fill="none" />
+                    <circle cx="50" cy="50" r="25" stroke="#cc241d" strokeWidth="2" fill="none" />
+                    <circle cx="50" cy="50" r="10" stroke="#cc241d" strokeWidth="2" fill="none" />
                     <line x1="50" y1="0" x2="50" y2="20" stroke="#cc241d" strokeWidth="2" />
                     <line x1="50" y1="80" x2="50" y2="100" stroke="#cc241d" strokeWidth="2" />
                     <line x1="0" y1="50" x2="20" y2="50" stroke="#cc241d" strokeWidth="2" />
@@ -391,14 +396,21 @@ function LobbyPage() {
                 </svg>
 
                 <svg className="svg-target" viewBox="0 0 100 100" aria-hidden="true">
-                    <circle cx="50" cy="50" r="30" stroke="#98971a" strokeWidth="3" fill="none" />
+                    <circle cx="50" cy="50" r="35" stroke="#98971a" strokeWidth="3" fill="none" />
+                    <circle cx="50" cy="50" r="20" stroke="#98971a" strokeWidth="2" fill="none" />
+                    <circle cx="50" cy="50" r="5" stroke="#98971a" strokeWidth="2" fill="#98971a" />
                     <line x1="50" y1="10" x2="50" y2="90" stroke="#98971a" strokeWidth="2" />
                     <line x1="10" y1="50" x2="90" y2="50" stroke="#98971a" strokeWidth="2" />
                 </svg>
             </div>
 
-            {/* Laser animations */}
-            <div className="laser laser-left-to-right"></div>
+            {/* Enhanced Laser animations */}
+            <div className="laser-container">
+                <div className="laser laser-left-to-right"></div>
+                <div className="laser laser-right-to-left"></div>
+                <div className="laser laser-left-to-right" style={{ top: '25%', animationDelay: '5s' }}></div>
+                <div className="laser laser-right-to-left" style={{ top: '75%', animationDelay: '12s' }}></div>
+            </div>
             <div className="laser laser-right-to-left"></div>
 
             <h1>Lobby: {lobbyState?.code}</h1>
@@ -439,9 +451,9 @@ function LobbyPage() {
                                         </div>
                                         {/* Show player's detected color if available */}
                                         {player.r !== undefined && player.g !== undefined && player.b !== undefined && (
-                                            <div 
+                                            <div
                                                 className="player-color-circle"
-                                                style={{ 
+                                                style={{
                                                     backgroundColor: `rgb(${player.r}, ${player.g}, ${player.b})`,
                                                     width: '20px',
                                                     height: '20px',
@@ -465,19 +477,19 @@ function LobbyPage() {
                     onClick={handleStartGame}
                     className="start-game-button"
                     disabled={
-                        lobbyState.players.length < 2 || 
-                        !lobbyState.players.every(player => 
+                        lobbyState.players.length < 2 ||
+                        !lobbyState.players.every(player =>
                             player.r !== undefined && player.g !== undefined && player.b !== undefined
                         )
                     }
                 >
-                    {lobbyState.players.length < 2 
+                    {lobbyState.players.length < 2
                         ? `Need ${2 - lobbyState.players.length} more players`
-                        : !lobbyState.players.every(player => 
+                        : !lobbyState.players.every(player =>
                             player.r !== undefined && player.g !== undefined && player.b !== undefined
                         )
-                        ? "Waiting for all players to detect shirt colors"
-                        : 'Start Game'
+                            ? "Waiting for all players to detect shirt colors"
+                            : 'Start Game'
                     }
                 </button>
             )}
