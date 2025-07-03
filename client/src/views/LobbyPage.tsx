@@ -434,7 +434,7 @@ function LobbyPage() {
             <p className="lobby-status">{lobbyState?.state}</p>
             {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-            <h2>Players ({lobbyState?.players.length ?? 0}/20):</h2>
+            <h2>Players ({lobbyState ? lobbyState.players.filter(p => !p.isSpectator).length : 0}/20):</h2>
             <div className="player-list-scroll-wrapper">
                 {lobbyState?.players.length === 0 ? (
                     <p>No players in this lobby yet.</p>
