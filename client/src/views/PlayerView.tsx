@@ -33,6 +33,7 @@ interface Lobby {
 export default function PlayerView() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const audioRef = useRef<HTMLAudioElement>(null); // Add audio ref for doom.mp3
     const [particles, setParticles] = useState<Particle[]>([]);
     const [bodyPixNet, setBodyPixNet] = useState<bodyPix.BodyPix | null>(null);
     const predictionsRef = useRef<cocoSsd.DetectedObject[]>([]);
@@ -788,6 +789,52 @@ export default function PlayerView() {
         }
     };
 
+    // Audio initialization - play doom.mp3 when player starts playing
+    useEffect(() => {
+        const initializeAudio = async () => {
+            if (audioRef.current) {
+                try {
+                    audioRef.current.loop = true; // Loop the soundtrack
+                    audioRef.current.volume = 0.3; // Set volume to 30%
+
+                    // Try to play audio automatically (may be blocked by browser policies)
+                    await audioRef.current.play();
+                    console.log("🎵 Doom soundtrack started playing");
+                } catch (error) {
+                    console.log("🔇 Auto-play blocked, audio will start on user interaction");
+
+                    // Add click listener to start audio on first user interaction
+                    const handleFirstInteraction = async () => {
+                        try {
+                            if (audioRef.current) {
+                                await audioRef.current.play();
+                                console.log("🎵 Doom soundtrack started after user interaction");
+                                document.removeEventListener('click', handleFirstInteraction);
+                                document.removeEventListener('touchstart', handleFirstInteraction);
+                            }
+                        } catch (playError) {
+                            console.error("❌ Error playing audio:", playError);
+                        }
+                    };
+
+                    document.addEventListener('click', handleFirstInteraction, { once: true });
+                    document.addEventListener('touchstart', handleFirstInteraction, { once: true });
+                }
+            }
+        };
+
+        // Initialize audio when component mounts
+        initializeAudio();
+
+        // Cleanup function to stop audio when component unmounts
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            }
+        };
+    }, []);
+
     // Main game interface
     return (
         <div className="player-wrapper" onClick={handleShoot}>
@@ -977,6 +1024,9 @@ export default function PlayerView() {
                     </div>
                 </div>
             )}
+
+            {/* Audio element for doom.mp3 soundtrack */}
+            <audio ref={audioRef} src="/doom.mp3" preload="auto" />
         </div>
     );
 }
