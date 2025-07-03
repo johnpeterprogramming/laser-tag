@@ -25,17 +25,45 @@ interface LocationState {
     lobby: Lobby;
 }
 
+import { useRef } from "react";
 export default function SpectatorView() {
     const location = useLocation();
     const { lobby } = (location.state as LocationState) || {};
     const [currentLobby, setCurrentLobby] = useState<Lobby | undefined>(lobby);
+    const [gameEnded, setGameEnded] = useState(false);
+    const [winner, setWinner] = useState<Player | null>(null);
+    const [gameStartTime, setGameStartTime] = useState<number | null>(null);
+    const [gameEndTime, setGameEndTime] = useState<number | null>(null);
+    const startAudioRef = useRef<HTMLAudioElement>(null);
+    const winnerAudioRef = useRef<HTMLAudioElement>(null);
+
     useEffect(() => {
         if (lobby) {
             socket.on("lobbyUpdated", (updatedLobby: Lobby) => {
                 setCurrentLobby(updatedLobby);
             });
+            // Listen for game start to record start time (no sound here)
+            socket.on("gameStarted", () => {
+                setGameStartTime(Date.now());
+                setGameEnded(false);
+                setWinner(null);
+                setGameEndTime(null);
+            });
+            socket.on("gameEnded", (data: { winner: Player; lobbyCode: string }) => {
+                setGameEnded(true);
+                setWinner(data.winner);
+                setGameEndTime(Date.now());
+                if (winnerAudioRef.current) {
+                    try {
+                        winnerAudioRef.current.volume = 0.6;
+                        winnerAudioRef.current.currentTime = 0;
+                        winnerAudioRef.current.play();
+                    } catch (e) {}
+                }
+            });
             return () => {
                 socket.off("lobbyUpdated");
+                socket.off("gameStarted");
                 socket.off("gameEnded");
             };
         }
@@ -52,8 +80,42 @@ export default function SpectatorView() {
         return () => window.removeEventListener("resize", setVH);
     }, []);
 
+
+    // Winner popup (bouncing, slow)
+    let gameDuration = null;
+    if (gameStartTime && gameEndTime) {
+        const ms = gameEndTime - gameStartTime;
+        const min = Math.floor(ms / 60000);
+        const sec = Math.floor((ms % 60000) / 1000);
+        gameDuration = `${min > 0 ? min + 'm ' : ''}${sec}s`;
+    }
+
+    const winnerPopup = gameEnded ? (
+        <div className="winner-popup-bounce">
+            <div className="winner-popup-content">
+                <div className="winner-icon">🏆</div>
+                <div className="winner-title">
+                    {winner?.name ? `${winner.name} WINS!` : "VICTORY!"}
+                </div>
+                <div className="winner-subtitle">
+                    {winner?.name ? `Congratulations to ${winner.name}!` : "Game Over"}
+                </div>
+                {gameDuration && (
+                    <div className="winner-duration" style={{marginTop:8, color:'#b8bb26', fontWeight:600, fontSize:'1.05em'}}>
+                        Game Duration: {gameDuration}
+                    </div>
+                )}
+            </div>
+        </div>
+    ) : null;
+
     return (
         <div className="spectator-dashboard-container">
+            {/* Winner popup at the bottom, bouncing slowly */}
+            {winnerPopup}
+            {/* Audio elements for sounds */}
+            <audio ref={startAudioRef} src="/start.wav" preload="auto" />
+            <audio ref={winnerAudioRef} src="/winner.mp3" preload="auto" />
             <header className="dashboard-header live-header">
                 <h1>
                   <span className="live-dot"></span>
@@ -132,4 +194,43 @@ export default function SpectatorView() {
             </main>
         </div>
     );
+/* Winner popup bounce animation styles */
+/* Add this to SpectatorView.css or your global CSS */
+/*
+.winner-popup-bounce {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  z-index: 9999;
+  animation: bounce 3.5s infinite alternate cubic-bezier(.5,1.8,.5,1);
+}
+.winner-popup-content {
+  background: #222b3a;
+  color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 3px solid #cc241d;
+}
+.winner-popup-content .winner-icon {
+  font-size: 2.5em;
+  margin-bottom: 8px;
+}
+.winner-popup-content .winner-title {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+.winner-popup-content .winner-subtitle {
+  font-size: 1.1em;
+  color: #fabd2f;
+}
+@keyframes bounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-30px); }
+}
+*/
 }

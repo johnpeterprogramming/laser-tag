@@ -1,3 +1,39 @@
+/* Winner popup bounce animation styles */
+.winner-popup-bounce {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  z-index: 9999;
+  animation: bounce 3.5s infinite alternate cubic-bezier(.5,1.8,.5,1);
+}
+.winner-popup-content {
+  background: #222b3a;
+  color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 3px solid #cc241d;
+}
+.winner-popup-content .winner-icon {
+  font-size: 2.5em;
+  margin-bottom: 8px;
+}
+.winner-popup-content .winner-title {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+.winner-popup-content .winner-subtitle {
+  font-size: 1.1em;
+  color: #fabd2f;
+}
+@keyframes bounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-30px); }
+}
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700;800&display=swap');
 
 @keyframes neonPulse {

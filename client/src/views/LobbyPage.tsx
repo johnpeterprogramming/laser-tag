@@ -26,6 +26,11 @@ function LobbyPage() {
     const [modelsLoaded, setModelsLoaded] = useState<boolean>(false);
     const selfieNotTaken = useRef(true); // Track if selfie has NOT been taken
 
+
+    // Audio refs for join.wav and start.wav
+    const joinAudioRef = useRef<HTMLAudioElement>(null);
+    const startAudioRef = useRef<HTMLAudioElement>(null);
+
     // Suppress unused variable warning for cocoModel (reserved for future features)
     void cocoModel;
 
@@ -125,7 +130,6 @@ function LobbyPage() {
             alert('Camera access is required to detect your shirt color. Please allow camera permissions.');
         }
     };
-
     const handleStartGame = () => {
         if (lobbyState?.code) {
             // Check if all players have shirt colors detected
@@ -138,6 +142,14 @@ function LobbyPage() {
                 return;
             }
 
+            // Play start.wav for host only
+            if (playerState?.isHost && startAudioRef.current) {
+                try {
+                    startAudioRef.current.currentTime = 0;
+                    startAudioRef.current.play();
+                } catch (e) {}
+            }
+
             socket.emit('startGame', { lobbyCode: lobbyState.code });
 
             // Only handle error responses for the host
@@ -147,18 +159,21 @@ function LobbyPage() {
                 }
                 socket.off('startGameResponse');
             });
-
-            // If current user is a spectator, redirect to spectator view with lobby data
-            if (playerState?.isSpectator) {
-                navigate('/spectator', { state: { lobby: lobbyState } });
-            }
         }
-    }
+    };
 
     const handleTakeSelfie = async () => {
         if (!videoRef.current || !canvasRef.current) {
             console.error('Video or canvas not available');
             return;
+        }
+
+        // Play join.wav for joiner only
+        if (joinAudioRef.current) {
+            try {
+                joinAudioRef.current.currentTime = 0;
+                joinAudioRef.current.play();
+            } catch (e) {}
         }
 
         const video = videoRef.current;
@@ -324,8 +339,10 @@ function LobbyPage() {
 
 
     return (
-
         <div className="lobby-page-container">
+            {/* Audio elements for join.wav and start.wav */}
+            <audio ref={joinAudioRef} src="/join.wav" preload="auto" />
+            <audio ref={startAudioRef} src="/start.wav" preload="auto" />
             {/* Video stream and canvas for object detection */}
             {lobbyState && selfieNotTaken.current && (
                 <video
