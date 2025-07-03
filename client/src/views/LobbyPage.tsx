@@ -110,7 +110,7 @@ function LobbyPage() {
         try {
             const mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: {
-                    //   facingMode: 'environment', // Use back camera for better photos
+                      facingMode: 'environment', // Use back camera for better photos
                     //   width: { ideal: 1280 },
                     //   height: { ideal: 720 }
                 }

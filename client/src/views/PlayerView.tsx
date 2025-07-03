@@ -229,12 +229,14 @@ export default function PlayerView() {
                 },
                 {
                     video: {
+                        facingMode: "environment",
                         width: { ideal: 1280 },
                         height: { ideal: 720 },
                     },
                 },
                 {
                     video: {
+                        facingMode: "environment",
                         width: { ideal: 640 },
                         height: { ideal: 480 },
                     },
