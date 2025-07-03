@@ -220,6 +220,10 @@ export default function PlayerView() {
             console.log("🎥 Requesting camera access...");
 
             const cameraConfigs = [
+                { video: {
+                        facingMode: "environment",
+                    },
+                },
                 {
                     video: {
                         facingMode: "environment",
