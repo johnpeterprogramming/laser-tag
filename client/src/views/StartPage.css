@@ -171,7 +171,7 @@
 .input-group input {
   width: 100%;
   max-width: 100%;
-  padding: 1% 1%;
+  padding: 1% 2%;
   border: 2px solid rgba(0, 255, 255, 0.4);
   border-radius: 15px;
   font-size: 1.2em;
@@ -186,6 +186,7 @@
     inset 0 2px 8px rgba(0, 0, 0, 0.3),
     0 0 20px rgba(0, 255, 255, 0.1);
   box-sizing: border-box;
+  text-align: left;
 }
 
 .input-group input:focus {
