@@ -764,7 +764,7 @@ export default function PlayerView() {
                         socket.emit("playerShoot", {
                             targetPlayerId: targetPlayer.id,
                             lobbyCode: lobbyCode,
-                            damage: 25,
+                            damage: 10,
                         });
                         break; // Only target the first matched player
                     }
